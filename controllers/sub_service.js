@@ -78,7 +78,7 @@ const addSubService = async (req, res, next) => {
 
             await subService.create(
                 subServiceDetails,
-                {fields: ['name', 'service_id', 'service_type','image']})
+                {fields: ['name', 'service_id', 'service_name','image']})
 
             await serviceController.incrementSubServicesNo(req, res, next)
 
@@ -164,7 +164,6 @@ const updateSubService = async (req, res, next) => {
             return next(new errors.BadRequestError('Invalid Service ID'))
         }
     } catch (e) {
-        console.log(e)
         if(e.name === 'SequelizeUniqueConstraintError') {
             return next(new errors.BadRequestError('Sub-Service with this name already exists'))
         }
@@ -201,27 +200,67 @@ const changeSubServiceStatus = async (req, res, next) => {
             message: 'Sub-Service Status Updated Successfully'
         })
     } catch(e) {
-        console.log(e)
         return next(new errors.CustomError('Internal Server Error'))
     }
 }
 
-/// Delete an existing service.
+/// Delete an existing sub-service and associated service items.
 const deleteSubService = async (req, res, next) => {
-    const serviceId = req.params.id
+    const subServiceId = req.params.id
 
     try {
-        await subService.destroy({
-            where: {id: serviceId}
+
+        const oldServiceId = await subService.findOne({
+            attributes: ['service_id'],
+            where: {id: req.params.id}
         })
+
+        req.body.oldServiceId = oldServiceId.service_id
+
+        await subService.destroy({
+            where: {id: subServiceId}
+        })
+
+        await serviceController.decrementSubServicesNo(req, res, next)
+
+        await serviceItem.destroy({where: {sub_service_id: subServiceId}})
+
         return returnJson({
             res: res,
             statusCode: 200,
-            message: 'Service Deleted Successfully'
+            message: 'Sub-Service Deleted Successfully'
         })
     } catch (e) {
         return next(new errors.CustomError('Internal Server Error'))
     }
+}
+
+/// Increment the number of associated service item by one when a new item is added under this sub-service.
+const incrementServiceItemNo = async(req, res, next) => {
+    
+    const associatedServiceItemsNo = await subService.findOne({
+        where: {id: req.body.sub_service_id},
+        attributes: ['total_associated_items']
+    })
+
+    await subService.update({
+        total_associated_items: associatedServiceItemsNo.total_associated_items + 1},
+        {where: {id: req.body.sub_service_id}}
+    )
+}
+
+/// Decrement the number of associated service items by one when a new item is added under this service.
+const decrementServiceItemNo = async(req, res, next) => {
+    
+    const associatedServiceItemsNo = await subService.findOne({
+        attributes: ['total_associated_items'],
+        where: {id: req.body.oldIds.sub_service_id},
+    })
+
+    await subService.update({
+        total_associated_items: associatedServiceItemsNo.total_associated_items - 1},
+        {where: {id: req.body.oldIds.sub_service_id}}
+    )
 }
 
 module.exports = {
@@ -230,4 +269,6 @@ module.exports = {
     updateSubService,
     changeSubServiceStatus,
     deleteSubService,
+    incrementServiceItemNo,
+    decrementServiceItemNo,
 }

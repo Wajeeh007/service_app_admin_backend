@@ -5,6 +5,7 @@ const serviceItem = sequelize.define('service_item', {
     name: {
         type: DataTypes.STRING,
         allowNull: false,
+        unique: true
     },
     service_id: {
         type: DataTypes.INTEGER,
@@ -14,8 +15,8 @@ const serviceItem = sequelize.define('service_item', {
         type: DataTypes.INTEGER,
         allowNull: false,
     },
-    desc: {
-        type: DataTypes.TEXT,
+    sub_service_name: {
+        type: DataTypes.STRING,
         allowNull: false,
     },
     price: {
