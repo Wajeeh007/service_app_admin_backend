@@ -254,12 +254,12 @@ const decrementServiceItemNo = async(req, res, next) => {
     
     const associatedServiceItemsNo = await subService.findOne({
         attributes: ['total_associated_items'],
-        where: {id: req.body.oldIds.sub_service_id},
+        where: {id: req.body.sub_service_id},
     })
 
     await subService.update({
         total_associated_items: associatedServiceItemsNo.total_associated_items - 1},
-        {where: {id: req.body.oldIds.sub_service_id}}
+        {where: {id: req.body.sub_service_id}}
     )
 }
 

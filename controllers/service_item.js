@@ -100,7 +100,6 @@ const addServiceItem = async (req, res, next) => {
         }
         
     } catch (e) {
-        console.log(e)
         if(e.name === 'SequelizeUniqueConstraintError') {
             return next(new errors.BadRequestError('Service item with this name already exists'))
         }
@@ -132,7 +131,7 @@ const updateServiceItem = async (req, res, next) => {
                 where: {id: req.params.id}
             })
 
-            req.body.oldSubServiceId = oldIds.sub_service_id
+            req.body.sub_service_id = oldIds.sub_service_id
         }
 
         const newSubServiceName = await subService.findOne({
@@ -205,10 +204,12 @@ const deleteServiceItem = async (req, res, next) => {
     const serviceItemId = req.params.id
 
     try {
-
-        await subService.destroy({
+        const subServiceId = await serviceItem.findOne({
+            attributes: ['sub_service_id'],
             where: {id: serviceItemId}
         })
+
+        req.body.oldIds = {sub_service_id: subServiceId.sub_service_id}
 
         await subServiceController.decrementServiceItemNo(req, res, next)
 
