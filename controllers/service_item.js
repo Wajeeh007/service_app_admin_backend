@@ -3,25 +3,21 @@ const errors = require('../errors/index.js')
 const returnJson = require('../custom_functions/return_json.js')
 const subServiceController = require('./sub_service.js')
 const serviceItem = require('../models/service_item.js')
+const setPaginationData = require('../custom_functions/set_pagination_data.js')
+const setBodyValuesFunc = require('../custom_functions/set_body_values.js')
 
 /// Get service items.
 const getServiceItems = async (req, res, next) => {
 
-    let page = parseInt(req.query.page, 10)
-    let limit = parseInt(req.query.limit, 10)
-
-    if(page === undefined || page === null || isNaN(page)) {
-        page = 0
-    } 
-        
-    if(limit === undefined || limit === null || limit === 0 || isNaN(limit)) {
-        limit = 10
-    }
+    const paginationData = setPaginationData({
+        limit: req.query.limit,
+        page: req.query.page
+    })
 
     try {
         const result = await serviceItem.findAll({
-            limit: limit,
-            offset: page * limit,
+            limit: paginationData.limit,
+            offset: paginationData.page * paginationData.limit,
             order: [['created_at', 'ASC']],
             attributes: {exclude:  ['updated_at']}
         })
@@ -33,13 +29,13 @@ const getServiceItems = async (req, res, next) => {
                 res: res,
                 statusCode: 200,
                 message: 'Fetched service items',
-                limit: limit,
-                page: page,
-                data: result,
+                limit: paginationData.limit,
+                page: paginationData.page,
+                data: paginationData.result,
             })
         }
     } catch (e) {
-        return next(new errors.CustomError('Internal Server Error. Retry'))
+        return next(new errors.InternalServerError('Internal Server Error. Retry'))
     }
 }
 
@@ -55,9 +51,7 @@ const addServiceItem = async (req, res, next) => {
     
     try {
 
-        for(var i = 0; i < Object.keys(req.body).length; i++) {
-            serviceItemDetails[Object.keys(req.body)[i]] = Object.values(req.body)[i]
-        }
+        serviceItemDetails = setBodyValuesFunc(req.body)
 
         serviceItemDetails.image = 'https://dummy_image_url.jpg'
 
@@ -71,7 +65,7 @@ const addServiceItem = async (req, res, next) => {
             serviceItemDetails.sub_service_name = subServiceDetails.name
             serviceItemDetails.service_id = subServiceDetails.service_id
 
-            await serviceItem.create(
+            const newServiceItem = await serviceItem.create(
                 serviceItemDetails,
                 {fields: [
                     'name',
@@ -84,16 +78,11 @@ const addServiceItem = async (req, res, next) => {
 
             await subServiceController.incrementServiceItemNo(req, res, next)
 
-            const lastRow = await serviceItem.findOne({
-                order: [['created_at', 'DESC']],
-                attributes: {exclude: ['updated_at']}
-            });
-
             return returnJson({
                 res: res,
                 statusCode: 201,
                 message: 'Service Item Added Successfully',
-                data: lastRow
+                data: newServiceItem
             })
         } else {
             return next(new errors.BadRequestError('Invalid Sub-Service selected'))
@@ -103,7 +92,7 @@ const addServiceItem = async (req, res, next) => {
         if(e.name === 'SequelizeUniqueConstraintError') {
             return next(new errors.BadRequestError('Service item with this name already exists'))
         }
-        return next(new errors.CustomError('Internal Server Error'))
+        return next(new errors.InternalServerError('Internal Server Error'))
     }
 }
 
@@ -115,13 +104,11 @@ const updateServiceItem = async (req, res, next) => {
         return next(new errors.BadRequestError('Invalid/Empty data')) 
     }
 
-    let serviceItemDetails = req.body
+    let serviceItemDetails = {}
 
     try {
 
-        for(var i = 0; i < Object.keys(req.body).length; i++) {
-            serviceItemDetails[Object.keys(req.body)[i]] = Object.values(req.body)[i]
-        }
+        serviceItemDetails = setBodyValuesFunc(req.body)
 
         /// Add code to update service items when service ID is changed.
 
@@ -169,7 +156,7 @@ const updateServiceItem = async (req, res, next) => {
         if(e.name === 'SequelizeUniqueConstraintError') {
             return next(new errors.BadRequestError('Service Item with this name already exists'))
         }
-        return next(new errors.CustomError('Internal Server Error'))
+        return next(new errors.InternalServerError('Internal Server Error'))
     }
 }
 
@@ -195,7 +182,7 @@ const changeServiceItemStatus = async (req, res, next) => {
             message: 'Item Status Updated Successfully'
         })
     } catch(e) {
-        return next(new errors.CustomError('Internal Server Error'))
+        return next(new errors.InternalServerError('Internal Server Error'))
     }
 }
 
@@ -221,7 +208,7 @@ const deleteServiceItem = async (req, res, next) => {
             message: 'Service Item Deleted Successfully'
         })
     } catch (e) {
-        return next(new errors.CustomError('Internal Server Error'))
+        return next(new errors.InternalServerError('Internal Server Error'))
     }
 }
 

@@ -5,31 +5,23 @@ const subService = require('../models/sub_service.js')
 const serviceItem = require('../models/service_item.js')
 const sequelize = require('../custom_functions/db_connection.js')
 const sqlQueries = require('../utils/sql_queries.js')
+const setPaginationData = require('../custom_functions/set_pagination_data.js')
+const setBodyValuesFunc = require('../custom_functions/set_body_values.js')
 
 /// Fetch services.
 const getServices = async (req, res, next) => {
-    let page = parseInt(req.query.page, 10)
-    let limit = parseInt(req.query.limit, 10)
-
-    let includeLimits = true;
-
-    if((limit === undefined && page === undefined) || (limit === null && page === null) || (isNaN(limit) && isNaN(page))) {
-        includeLimits = false
-    } else {
-        if(page === undefined || page === null || isNaN(page)) {
-            page = 0
-        } 
-        
-        if(limit === undefined || limit === null || limit === 0 || isNaN(limit)) {
-            limit = 10
-        }
-    }
+    
+    const paginationData = setPaginationData({
+        limit: req.query.limit,
+        page: req.query.page,
+        includePagination: false,
+    })
 
     try {
         const result = await service.findAll({
-            limit: includeLimits ? limit : null,
-            offset: includeLimits ? page * limit : null,
-            attributes: includeLimits ? {exclude:  ['updated_at']} : ['id', 'name']
+            limit: paginationData.includeLimits ? paginationData.limit : null,
+            offset: paginationData.includeLimits ? paginationData.page * paginationData.limit : null,
+            attributes: paginationData.includeLimits ? {exclude:  ['updated_at']} : ['id', 'name']
         })
 
         if(result.length === 0){
@@ -39,8 +31,8 @@ const getServices = async (req, res, next) => {
                 res: res,
                 statusCode: 200,
                 message: 'Fetched services',
-                limit: includeLimits ? limit : undefined,
-                page: includeLimits ? page : undefined,
+                limit: paginationData.includeLimits ? paginationData.limit : undefined,
+                page: paginationData.includeLimits ? paginationData.page : undefined,
                 data: result,
             })
         }
@@ -57,24 +49,21 @@ const addNewService = async (req, res, next) => {
         return next(new errors.BadRequestError('Invalid/Empty data')) 
     }
 
+    let serviceDetails = {}
+
     try {
-        await sequelize.query(sqlQueries.addNewService, {
-            replacements: [
-                req.body.name,
-                req.body.desc,
-                'https://test_image_url.png'
-            ]
-        })
-            
-        const lastRow = await service.findOne({
-            order: [['id', 'DESC']],
-        });
+
+        serviceDetails = setBodyValuesFunc(req.body)
+
+        const newService = await service.create(
+            serviceDetails,
+            {fields: ['name', 'desc', 'image']})
 
         return returnJson({
             res: res,
             statusCode: 201,
             message: 'Service Added Successfully',
-            data: lastRow
+            data: newService,
         })
     } catch (e) {
         if(e.name === 'SequelizeUniqueConstraintError') {
@@ -92,12 +81,14 @@ const updateService = async (req, res, next) => {
         return next(new errors.BadRequestError('Invalid/Empty data')) 
     }
 
-    const updatedDetails = req.body
+    let serviceDetails = {}
     
     try {
 
+        serviceDetails = setBodyValuesFunc(req.body)
+
         await service.update(
-            {...updatedDetails},
+            {...serviceDetails},
             {where: {id: req.params.id}}
         )
 
@@ -130,23 +121,20 @@ const changeServiceStatus = async (req, res, next) => {
             where: {id: serviceId}
         })
         
-        if(status) {
+        if(status.status) {
             await service.update(
             {status: status.status === 1 ? 0 : 1},
-            {where: {id: serviceId}}
-        )
+            {where: {id: serviceId}})
 
-        if(status.status === 1){
+            if(status.status === 1){
             await subService.update(
                 {status: 0},
-                {where: {service_id: serviceId}}
-            )
+                {where: {service_id: serviceId}})
 
             await serviceItem.update(
                 {status: status.status === 1 ? 0 : 1},
-                {where: {service_id: serviceId}}
-            )
-        }
+                {where: {service_id: serviceId}})
+            }
         }
 
         return returnJson({
@@ -155,7 +143,6 @@ const changeServiceStatus = async (req, res, next) => {
             message: 'Service Status Updated Successfully'
         })
     } catch(e) {
-        console.log(e)
         return next(new errors.CustomError('Internal Server Error'))
     }
 }

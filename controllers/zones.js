@@ -64,14 +64,12 @@ const addZone = async (req, res, next) => {
                 ]
             });
         
-        const [idResult] = await sequelize.query(sqlQueries.selectLastInsertId);
-        const insertedId = idResult[0].id;
-        
-        const [zoneRows] = await sequelize.query(sqlQueries.selectFromZone, {
-            replacements: [insertedId]
-        });
+        const lastRow = await zones.findOne({
+                order: [['created_at', 'DESC']],
+                attributes: {exclude: ['updated_at']}
+            });
 
-        let newZone = zoneRows[0];
+        let newZone = lastRow[0];
         newZone.polylines = formatPolygon.wktToCoordinates(newZone.polylines)
         return returnJson({
             res: res,

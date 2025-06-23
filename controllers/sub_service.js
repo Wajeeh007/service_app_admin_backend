@@ -4,32 +4,24 @@ const returnJson = require('../custom_functions/return_json.js')
 const serviceController = require('./service.js')
 const serviceItem = require('../models/service_item.js')
 const service = require('../models/service.js')
+const setPaginationData = require('../custom_functions/set_pagination_data.js')
+const setBodyValuesFunc = require('../custom_functions/set_body_values.js')
 
+/// Get sub-services.
 const getSubServices = async (req, res, next) => {
 
-    let page = parseInt(req.query.page, 10)
-    let limit = parseInt(req.query.limit, 10)
-
-    let includeLimits = true;
-
-    if((limit === undefined && page === undefined) || (limit === null && page === null) || (isNaN(limit) && isNaN(page))) {
-        includeLimits = false
-    } else {
-        if(page === undefined || page === null || isNaN(page)) {
-            page = 0
-        } 
-        
-        if(limit === undefined || limit === null || limit === 0 || isNaN(limit)) {
-            limit = 10
-        }
-    }
+    const paginationData = setPaginationData({
+        limit: req.query.limit,
+        page: req.query.page,
+        includePagination: false,
+    })
 
     try {
         const result = await subService.findAll({
-            limit: includeLimits ? limit : null,
-            offset: includeLimits ? page * limit : null,
+            limit: paginationData.includeLimits ? paginationData.limit : null,
+            offset: paginationData.includeLimits ? paginationData.page * paginationData.limit : null,
             order: [['created_at', 'ASC']],
-            attributes: includeLimits ? {exclude:  ['updated_at']} : ['id', 'name']
+            attributes: paginationData.includeLimits ? {exclude:  ['updated_at']} : ['id', 'name']
         })
 
         if(result.length === 0){
@@ -39,13 +31,13 @@ const getSubServices = async (req, res, next) => {
                 res: res,
                 statusCode: 200,
                 message: 'Fetched sub-services',
-                limit: includeLimits ? limit : undefined,
-                page: includeLimits ? page : undefined,
+                limit: paginationData.includeLimits ? paginationData.limit : undefined,
+                page: paginationData.includeLimits ? paginationData.page : undefined,
                 data: result,
             })
         }
     } catch (e) {
-        return next(new errors.CustomError('Internal Server Error. Retry'))
+        return next(new errors.InternalServerError('Internal Server Error. Retry'))
     }
 }
 
@@ -61,9 +53,7 @@ const addSubService = async (req, res, next) => {
     
     try {
 
-        for(var i = 0; i < Object.keys(req.body).length; i++) {
-            subServiceDetails[Object.keys(req.body)[i]] = Object.values(req.body)[i]
-        }
+        subServiceDetails = setBodyValuesFunc(req.body)
 
         subServiceDetails.image = 'https://dummy_image_url.jpg'
 
@@ -76,22 +66,17 @@ const addSubService = async (req, res, next) => {
 
             subServiceDetails.service_type = serviceName.name
 
-            await subService.create(
+            const newSubService = await subService.create(
                 subServiceDetails,
                 {fields: ['name', 'service_id', 'service_name','image']})
 
             await serviceController.incrementSubServicesNo(req, res, next)
 
-            const lastRow = await subService.findOne({
-                order: [['created_at', 'DESC']],
-                attributes: {exclude: ['updated_at']}
-            });
-
             return returnJson({
                 res: res,
                 statusCode: 201,
                 message: 'Sub-Service Added Successfully',
-                data: lastRow
+                data: newSubService
             })
         } else {
             return next(new errors.BadRequestError('Invalid Service ID'))
@@ -101,7 +86,7 @@ const addSubService = async (req, res, next) => {
         if(e.name === 'SequelizeUniqueConstraintError') {
             return next(new errors.BadRequestError('Sub-Service with this name already exists'))
         }
-        return next(new errors.CustomError('Internal Server Error'))
+        return next(new errors.InternalServerError('Internal Server Error'))
     }
 
 }
@@ -114,13 +99,11 @@ const updateSubService = async (req, res, next) => {
         return next(new errors.BadRequestError('Invalid/Empty data')) 
     }
 
-    let subServiceDetails = req.body
+    let subServiceDetails = {}
 
     try {
 
-        for(var i = 0; i < Object.keys(req.body).length; i++) {
-            subServiceDetails[Object.keys(req.body)[i]] = Object.values(req.body)[i]
-        }
+        subServiceDetails = setBodyValuesFunc(req.body)
 
         /// Add code to update service items when service ID is changed.
 
@@ -167,7 +150,7 @@ const updateSubService = async (req, res, next) => {
         if(e.name === 'SequelizeUniqueConstraintError') {
             return next(new errors.BadRequestError('Sub-Service with this name already exists'))
         }
-        return next(new errors.CustomError('Internal Server Error'))
+        return next(new errors.InternalServerError('Internal Server Error'))
     }
 }
 
@@ -182,16 +165,18 @@ const changeSubServiceStatus = async (req, res, next) => {
             where: {id: subServiceId}
         })
         
-        await subService.update(
-            {status: status.status === 1 ? 0 : 1},
-            {where: {id: subServiceId}}
-        )
-
-        if(status.status === 1) {
-            await serviceItem.update(
+        if(status.status) {
+            await subService.update(
                 {status: status.status === 1 ? 0 : 1},
-                {where: {sub_service_id: subServiceId}}
+                {where: {id: subServiceId}}
             )
+
+            if(status.status === 1) {
+                await serviceItem.update(
+                    {status: status.status === 1 ? 0 : 1},
+                    {where: {sub_service_id: subServiceId}}
+                )
+            }
         }
 
         return returnJson({
@@ -200,7 +185,7 @@ const changeSubServiceStatus = async (req, res, next) => {
             message: 'Sub-Service Status Updated Successfully'
         })
     } catch(e) {
-        return next(new errors.CustomError('Internal Server Error'))
+        return next(new errors.InternalServerError('Internal Server Error'))
     }
 }
 
@@ -231,7 +216,7 @@ const deleteSubService = async (req, res, next) => {
             message: 'Sub-Service Deleted Successfully'
         })
     } catch (e) {
-        return next(new errors.CustomError('Internal Server Error'))
+        return next(new errors.InternalServerError('Internal Server Error'))
     }
 }
 
