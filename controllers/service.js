@@ -77,8 +77,8 @@ const addNewService = async (req, res, next) => {
 //TODO: Add code for image handling.
 const updateService = async (req, res, next) => {
 
-    if(!req.body.name && !req.body.desc) {
-        return next(new errors.BadRequestError('Invalid/Empty data')) 
+    if(req.body === undefined || req.body === null || Object.keys(req.body).length === 0) {
+        return next(new errors.BadRequestError('Invalid/Empty data'))
     }
 
     let serviceDetails = {}

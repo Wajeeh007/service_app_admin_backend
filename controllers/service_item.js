@@ -100,8 +100,8 @@ const addServiceItem = async (req, res, next) => {
 //TODO: Add code for image handling.
 const updateServiceItem = async (req, res, next) => {
 
-    if(!req.body.name && !req.body.sub_service_id) {
-        return next(new errors.BadRequestError('Invalid/Empty data')) 
+    if(req.body === undefined || req.body === null || Object.keys(req.body).length === 0) {
+        return next(new errors.BadRequestError('Invalid/Empty data'))
     }
 
     let serviceItemDetails = {}
