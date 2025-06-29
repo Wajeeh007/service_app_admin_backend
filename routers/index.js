@@ -14,7 +14,7 @@ router.use('/zones', zoneRouter)
 router.use('/services', serviceRouter)
 router.use('/sub_services', subServiceRouter),
 router.use('/service_items', serviceItemRouter),
-router.use('/withdraw_methods', withdrawMethodRouter),
+router.use('/withdraw/methods', withdrawMethodRouter),
 router.use('/customers', customerRouter),
 router.use('/servicemen', servicemanRouter)
 

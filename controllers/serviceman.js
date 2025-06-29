@@ -47,7 +47,6 @@ const getServicemen = async (req, res, next) => {
             page: paginationData.page
         })
     } catch(e) {
-        console.log(e)
         return next(new errors.InternalServerError('Internal Server Error. Retry'))
     }
 
@@ -62,7 +61,7 @@ const getServicemenStats = async (req, res, next) => {
         })
 
         const in_active = await serviceman.count({
-            where: {[Op.or]: [{ status: 0 }, { account_suspended: 1 }, {is_verified: 0}],}
+            where: {[Op.or]: [{ account_suspended: 1 }],}
         })
 
         return returnJson({
@@ -72,6 +71,30 @@ const getServicemenStats = async (req, res, next) => {
             data: {total, active, in_active}
         })
 
+    } catch(e) {
+        return next(new errors.InternalServerError('Internal Server Error. Retry'))
+    }
+}
+
+const getNewServicemenRequests = async (req, res, next) => {
+    const paginationData = setPaginationData({
+        limit: req.query.limit,
+        page: req.query.page,
+    })
+
+    try {
+        const result = await serviceman.findAll({
+            where: {[Op.and]: [{ status: 0}, { account_suspended: 0 }, {is_verified: 0}]}
+        })
+
+        return returnJson({
+            res: res,
+            statusCode: 200,
+            message: 'Fetched new servicemen requests',
+            data: result,
+            limit: paginationData.limit,
+            page: paginationData.page
+        })
     } catch(e) {
         return next(new errors.InternalServerError('Internal Server Error. Retry'))
     }
@@ -156,4 +179,6 @@ module.exports = {
   changeServicemanStatus,
   changeServicemanAccountSuspension,
   deleteServiceman,
+  getNewServicemenRequests,
+
 }

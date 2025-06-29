@@ -64,6 +64,25 @@ const serviceman = sequelize.define('service_man', {
     zone_id: {
         type: DataTypes.INTEGER,
         allowNull: false,
+    },
+    total_orders: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 0
+    },
+    earnings: {
+        type: DataTypes.DOUBLE,
+        allowNull: false,
+        defaultValue: 0.00
+    },
+    identification_number: {
+        type: DataTypes.TEXT,
+        allowNull: false,
+    },
+    identification_expiry: {
+        type: DataTypes.DATE,
+        allowNull: false,
+        defaultValue: sequelize.literal('CURRENT_TIMESTAMP')
     }
 }, {
     freezeTableName: true,
