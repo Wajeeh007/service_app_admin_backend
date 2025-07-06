@@ -100,6 +100,30 @@ const getNewServicemenRequests = async (req, res, next) => {
     }
 }
 
+const getSuspendedServicemen = async (req, res, next) => {
+    const paginationData = setPaginationData({
+        limit: req.query.limit,
+        page: req.query.page,
+    })
+
+    try {
+        const result = await serviceman.findAll({
+            where: { account_suspended: 1}
+        })
+
+        return returnJson({
+            res: res,
+            statusCode: 200,
+            message: 'Fetched suspended servicemen',
+            data: result,
+            limit: paginationData.limit,
+            page: paginationData.page
+        })
+    } catch(e) {
+        return next(new errors.InternalServerError('Internal Server Error. Retry'))
+    }
+}
+
 const updateCustomerDetails = async (req, res, next) => {
 
 
@@ -180,5 +204,6 @@ module.exports = {
   changeServicemanAccountSuspension,
   deleteServiceman,
   getNewServicemenRequests,
+  getSuspendedServicemen,
 
 }

@@ -9,6 +9,7 @@ const serviceItemRouter = require('./service_item.js')
 const withdrawMethodRouter = require('./withdraw_method.js')
 const customerRouter = require('./customer.js')
 const servicemanRouter = require('./serviceman.js')
+const withdrawRequestRouter = require('./withdraw_request.js')
 
 router.use('/zones', zoneRouter)
 router.use('/services', serviceRouter)
@@ -17,5 +18,6 @@ router.use('/service_items', serviceItemRouter),
 router.use('/withdraw/methods', withdrawMethodRouter),
 router.use('/customers', customerRouter),
 router.use('/servicemen', servicemanRouter)
+router.use('/withdraw/requests', withdrawRequestRouter)
 
 module.exports = router

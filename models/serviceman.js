@@ -83,6 +83,9 @@ const serviceman = sequelize.define('service_man', {
         type: DataTypes.DATE,
         allowNull: false,
         defaultValue: sequelize.literal('CURRENT_TIMESTAMP')
+    },
+    note: {
+        type: DataTypes.TEXT,
     }
 }, {
     freezeTableName: true,
