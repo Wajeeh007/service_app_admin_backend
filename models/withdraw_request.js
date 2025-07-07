@@ -29,6 +29,16 @@ const withdrawRequest = sequelize.define('withdraw_requests', {
     status: {
         type: DataTypes.ENUM('pending', 'approved', 'settled', 'denied'),
         allowNull: false,
+    },
+    note: {
+        type: DataTypes.TEXT,
+    },
+    receipt: {
+        type: DataTypes.STRING,
+        allowNull: false
+    },
+    transfer_date: {
+        type: DataTypes.DATE,
     }
 }, {
     freezeTableName: true,
