@@ -11,50 +11,42 @@ const getWithdrawMethods = async (req, res, next) => {
         page: req.query.page,
     })
 
+    const status = parseInt(req.query.status, 10)
+
+    if(req.query.status) {
+        if(isNaN(status) || status > 1 || status < 0) {
+            return next(new errors.BadRequestError('Invalid status provided'))
+        }
+    }
+
     try {
+        let result = {}
 
         if(req.query.status) {
-            if(isNaN(parseInt(req.query.status, 10)) || (parseInt(req.query.status, 10) > 1 || parseInt(req.query.status, 10) < 0)) {
-                return next(new errors.BadRequestError('Invalid status provided'))
-            } else {
-                const result = await withdrawMethod.findAll({
-                    where: {status: req.query.status},
-                    limit: paginationData.limit,
-                    offset: paginationData.page * paginationData.limit,
-                    order: [['created_at', 'ASC']],
-                    attributes: {exclude:  ['updated_at']}    
-                })
-                
-                return returnJson({
-                    res: res,
-                    statusCode: 200,
-                    message: 'Fetched withdraw methods',
-                    limit: paginationData.limit,
-                    page: paginationData.page,
-                    data: result,
-                })
-            }
-        }
-
-        const result = await withdrawMethod.findAll({
-            limit: paginationData.limit,
-            offset: paginationData.page * paginationData.limit,
-            order: [['created_at', 'ASC']],
-            attributes: {exclude:  ['updated_at']}
-        })
-
-        if(result.length === 0){
-            return next(new errors.NotFoundError('No Withdraw method found'))
-        } else {
-            return returnJson({
-                res: res,
-                statusCode: 200,
-                message: 'Fetched withdraw methods',
+            result = await withdrawMethod.findAll({
+                where: {status: req.query.status},
                 limit: paginationData.limit,
-                page: paginationData.page,
-                data: result,
+                offset: paginationData.page * paginationData.limit,
+                order: [['created_at', 'ASC']],
+                attributes: {exclude:  ['updated_at']}    
+            })
+        } else {
+            result = await withdrawMethod.findAll({
+                limit: paginationData.limit,
+                offset: paginationData.page * paginationData.limit,
+                order: [['created_at', 'ASC']],
+                attributes: {exclude:  ['updated_at']}
             })
         }
+
+        return returnJson({
+            res: res,
+            statusCode: 200,
+            message: 'Fetched withdraw methods',
+            limit: paginationData.limit,
+            page: paginationData.page,
+            data: result,
+        })
     
     } catch(e) {
         return next(new errors.InternalServerError('Internal Server Error. Retry'))
@@ -78,7 +70,8 @@ const addWithdrawMethod = async (req, res, next) => {
         if(withdrawMethodDetails.is_default && parseInt(withdrawMethodDetails.is_default) === 1) {
             await withdrawMethod.update(
                 {is_default: 0},
-                {where: {is_default: 1}
+                {where: {is_default: 1},
+                fields: ['is_default']
             })
         }
 

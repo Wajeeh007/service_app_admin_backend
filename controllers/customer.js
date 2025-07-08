@@ -12,17 +12,35 @@ const getCustomers = async (req, res, next) => {
     })
 
     const status = parseInt(req.query.status, 10)
+    const suspended = parseInt(req.query.suspended, 10)
 
     if(status !== undefined && status !== null && !isNaN(status) && (parseInt(req.query.status, 10) > 1) || (parseInt(req.query.status, 10) < 0)) {
         return next(new errors.BadRequestError('Invalid status provided'))
     }
 
+    if(suspended !== undefined && suspended !== null && !isNaN(suspended) && parseInt(req.query.suspended, 10) != 1) {
+        return next(new errors.BadRequestError('Invalid suspended status provided'))
+    }
+
+    if(!isNaN(status)  && !isNaN(suspended)) {
+        return next(new errors.BadRequestError('Cannot provide both status and suspended status'))
+    }
+
     try {
 
         let result = {}
+     
         if(status !== undefined && status !== null && !isNaN(status)) {
             result = await customer.findAll({
-                where: {status: status, account_deleted: 0},
+                where: {status: status, account_suspended: 0},
+                limit: paginationData.limit,
+                offset: paginationData.page * paginationData.limit,
+                order: [['created_at', 'DESC']],
+                attributes: {exclude:  ['updated_at', 'password']}
+            })
+        } else if(suspended !== undefined && suspended !== null && !isNaN(suspended)){
+            result = await customer.findAll({
+                where: {account_suspended: suspended},
                 limit: paginationData.limit,
                 offset: paginationData.page * paginationData.limit,
                 order: [['created_at', 'DESC']],
