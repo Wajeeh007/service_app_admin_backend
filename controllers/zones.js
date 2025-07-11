@@ -55,7 +55,7 @@ const addZone = async (req, res, next) => {
     }
 
     try {
-        
+
         await sequelize.query(sqlQueries.addNewZone, {
                 replacements: [
                     zoneDetails.name,
@@ -65,12 +65,14 @@ const addZone = async (req, res, next) => {
             });
         
         const lastRow = await zones.findOne({
-                order: [['created_at', 'DESC']],
-                attributes: {exclude: ['updated_at']}
-            });
+            order: [['created_at', 'DESC']],
+            attributes: {exclude: ['updated_at']}
+        });
 
-        let newZone = lastRow[0];
+        let newZone = lastRow['dataValues'];
+        
         newZone.polylines = formatPolygon.wktToCoordinates(newZone.polylines)
+
         return returnJson({
             res: res,
             statusCode: 201,
@@ -78,11 +80,12 @@ const addZone = async (req, res, next) => {
             data: newZone
         })        
     } catch (e) {
+        console.log(e)
         if(e.name === 'SequelizeUniqueConstraintError') {
             return next(new errors.BadRequestError('Zone already exists'))
         } else if(e instanceof errors.BadRequestError) {
             return next(e)
-        } else if(e.parent.errno === 3616 || e.parent.errno === 3617) {
+        } else if(e.parent !== undefined && e.parent.errno !== undefined && e.parent.errno !== null && (e.parent.errno === 3616 || e.parent.errno === 3617)) {
             return next(new errors.BadRequestError('Invalid coordinates provided'))
         } else{
             return next(new errors.CustomError('Internal Server Error'))
