@@ -1,12 +1,10 @@
 'use strict';
 const { v4: uuidv4 } = require('uuid');
-const uuidConverter = require('../custom_functions/uuid_to_binary_converter.js')
 const roleNames = require('../utils/role_names.js')
 
 module.exports = {
   async up(queryInterface, Sequelize) {
-    // Get users and roles to create the relationships
-    console.log('Seeding User Roles')
+    
     const users = await queryInterface.sequelize.query(
       'SELECT id, email FROM users',
       { type: queryInterface.sequelize.QueryTypes.SELECT }
@@ -34,7 +32,7 @@ module.exports = {
     const userRoles = [
       // Super Admin
       {
-        id: uuidConverter(uuidv4()),
+        id: uuidv4(),
         user_id: userMap['super.admin@example.com'],
         role_id: roleMap[roleNames.superAdminRole],
         assigned_by: superAdminId,
@@ -43,7 +41,7 @@ module.exports = {
       
       // User Admin
       {
-        id: uuidConverter(uuidv4()),
+        id: uuidv4(),
         user_id: userMap['user.admin@example.com'],
         role_id: roleMap[roleNames.userAdminRole],
         assigned_by: superAdminId,
@@ -52,14 +50,14 @@ module.exports = {
       
       // Customers
       {
-        id: uuidConverter(uuidv4()),
+        id: uuidv4(),
         user_id: userMap['customer1@example.com'],
         role_id: roleMap[roleNames.customerRole],
         assigned_by: superAdminId,
         assigned_at: new Date()
       },
       {
-        id: uuidConverter(uuidv4()),
+        id: uuidv4(),
         user_id: userMap['customer2@example.com'],
         role_id: roleMap[roleNames.customerRole],
         assigned_by: superAdminId,
@@ -68,14 +66,14 @@ module.exports = {
       
       // Servicemen
       {
-        id: uuidConverter(uuidv4()),
+        id: uuidv4(),
         user_id: userMap['serviceman1@example.com'],
         role_id: roleMap[roleNames.servicemanRole],
         assigned_by: superAdminId,
         assigned_at: new Date()
       },
       {
-        id: uuidConverter(uuidv4()),
+        id: uuidv4(),
         user_id: userMap['serviceman2@example.com'],
         role_id: roleMap[roleNames.servicemanRole],
         assigned_by: superAdminId,

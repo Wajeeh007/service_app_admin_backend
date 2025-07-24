@@ -1,29 +1,42 @@
-const {DataTypes} = require('sequelize')
-const sequelize = require('../custom_functions/db_connection.js')
+const { v4: uuidv4 } = require('uuid');
 
-const customer = sequelize.define('customer_profiles', {
-
-    user_id: {
-        type: DataTypes.STRING,
-        allowNull: false
-    },
-    total_orders: {
-        type: DataTypes.INTEGER,
-        allowNull: false,
-        defaultValue: 0
-    },
-    total_spent: {
-        type: DataTypes.DOUBLE,
-        allowNull: false,
-        defaultValue: 0.00
-    },
-    preferences: {
-        type: DataTypes.JSON,
+module.exports = (sequelize, DataTypes) => {
+    const CustomerProfile = sequelize.define('CustomerProfile', {
+        id: {
+            type: DataTypes.UUID,
+            primaryKey: true,
+            allowNull: false,
+            defaultValue: () => uuidv4(),
+        },
+        user_id: {
+            type: DataTypes.UUID,
+            allowNull: false
+        },
+        total_orders: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+            defaultValue: 0
+        },
+        total_spent: {
+            type: DataTypes.DOUBLE,
+            allowNull: false,
+            defaultValue: 0.00
+        },
+        preferences: {
+            type: DataTypes.JSON,
+        }
+        }, {
+            tableName: 'customer_profiles',
+            createdAt: 'created_at',
+            updatedAt: 'updated_at',
+        });
+    
+        CustomerProfile.associate = models => {
+            CustomerProfile.belongsTo(models.User, {
+            foreignKey: 'user_id',
+            as: 'user'
+        });
     }
-}, {
-    freezeTableName: true,
-    createdAt: 'created_at',
-    updatedAt: 'updated_at',
-})
 
-module.exports = customer
+    return CustomerProfile;
+}

@@ -1,5 +1,5 @@
 const errors = require('../errors/index.js')
-const customer = require('../models/customer.js')
+const {User, Role} = require('../models')
 const { Op } = require("sequelize");
 const returnJson = require('../custom_functions/return_json.js')
 const setPaginationData = require('../custom_functions/set_pagination_data.js')
@@ -11,48 +11,52 @@ const getCustomers = async (req, res, next) => {
         page: req.query.page,
     })
 
-    const status = parseInt(req.query.status, 10)
-    const suspended = parseInt(req.query.suspended, 10)
+    const status = req.query.status
 
-    if(status !== undefined && status !== null && !isNaN(status) && (parseInt(req.query.status, 10) > 1) || (parseInt(req.query.status, 10) < 0)) {
-        return next(new errors.BadRequestError('Invalid status provided'))
-    }
-
-    if(suspended !== undefined && suspended !== null && !isNaN(suspended) && parseInt(req.query.suspended, 10) != 1) {
-        return next(new errors.BadRequestError('Invalid suspended status provided'))
-    }
-
-    if(!isNaN(status)  && !isNaN(suspended)) {
-        return next(new errors.BadRequestError('Cannot provide both status and suspended status'))
+    if(status !== undefined && status !== null) {
+        if(status !== 'active' && status !== 'in-active' && status !== 'suspended') {
+            return next(new errors.BadRequestError('Invalid status provided'))
+        }
     }
 
     try {
 
         let result = {}
      
-        if(status !== undefined && status !== null && !isNaN(status)) {
-            result = await customer.findAll({
-                where: {status: status, account_suspended: 0},
+        if(status !== undefined && status !== null) {
+            result = await User.findAll({
+                where: {status: status},
+                include: [{
+                    association: 'customer_profile',
+                    attributes: {exclude: ['id','updated_at', 'preferences', 'user_id',]}
+                }],
                 limit: paginationData.limit,
                 offset: paginationData.page * paginationData.limit,
                 order: [['created_at', 'DESC']],
-                attributes: {exclude:  ['updated_at', 'password']}
-            })
-        } else if(suspended !== undefined && suspended !== null && !isNaN(suspended)){
-            result = await customer.findAll({
-                where: {account_suspended: suspended},
-                limit: paginationData.limit,
-                offset: paginationData.page * paginationData.limit,
-                order: [['created_at', 'DESC']],
-                attributes: {exclude:  ['updated_at', 'password']}
+                attributes: {exclude: ['updated_at', 'password_hash', 'profile_image']}
             })
         } else {
-            result = await customer.findAll({
+            result = await User.findAll({
+                include: [{
+                    association: 'customer_profile',
+                    attributes: {exclude: ['id','updated_at', 'preferences', 'user_id']}
+                }],
                 limit: paginationData.limit,
                 offset: paginationData.page * paginationData.limit,
                 order: [['created_at', 'DESC']],
-                attributes: {exclude:  ['updated_at', 'password']}
+                attributes: {exclude:  ['updated_at', 'password_hash', 'profile_image']}
             })
+        }
+
+        if(result.length > 0){
+            result = result.map(u => {
+                const uJson = u.toJSON();
+                return {
+                    ...uJson,
+                    ...uJson.customer_profile,
+                    customer_profile: undefined
+                };
+            });
         }
 
         return returnJson({
@@ -66,19 +70,37 @@ const getCustomers = async (req, res, next) => {
     } catch(e) {
         return next(new errors.InternalServerError('Internal Server Error. Retry'))
     }
-
 }
 
 const getCustomersStats = async (req, res, next) => {
     try {
-        const total = await customer.count()
-
-        const active = await customer.count({
-            where: {[Op.and]: [{ status: 1 }, { account_suspended: 0 }, {is_verified: 1}],}
+        const total = await User.count({
+            include: [{
+                model: Role,
+                as: 'roles',
+                where: { name: 'customer' },
+                through: { attributes: [] }
+            }]
         })
 
-        const in_active = await customer.count({
-            where: {[Op.or]: [{ status: 0 }, { account_suspended: 1 }, {is_verified: 0}],}
+        const active = await User.count({
+            where: {status: 'active'},
+            include: [{
+                model: Role,
+                as: 'roles',
+                where: { name: 'customer' },
+                through: { attributes: [] }
+            }]
+        })
+
+        const in_active = await User.count({
+            where: {[Op.or]: [{status: 'in-active'}, {status: 'suspended'}]},
+            include: [{
+                model: Role,
+                as: 'roles',
+                where: { name: 'customer' },
+                through: { attributes: [] }
+            }]
         })
 
         return returnJson({

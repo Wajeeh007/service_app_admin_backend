@@ -1,13 +1,10 @@
 'use strict';
 const { v4: uuidv4 } = require('uuid');
 const roleNames = require('../utils/role_names.js')
-const uuidConverter = require('../custom_functions/uuid_to_binary_converter.js')
 
 module.exports = {
   async up(queryInterface, Sequelize) {
-    // Get users for profile creation
-
-    console.log('Seeding Profiles')
+    
     const users = await queryInterface.sequelize.query(
       'SELECT id, email FROM users',
       { type: queryInterface.sequelize.QueryTypes.SELECT }
@@ -31,14 +28,14 @@ module.exports = {
     // Admin ProfilesA
     const adminProfiles = [
       {
-        id: uuidConverter(uuidv4()),
+        id: uuidv4(),
         user_id: userMap['super.admin@example.com'],
         role_id: systemRolesMap[roleNames.superAdminRole],
         created_at: new Date(),
         updated_at: new Date()
       },
       {
-        id: uuidConverter(uuidv4()),
+        id: uuidv4(),
         user_id: userMap['user.admin@example.com'],
         role_id: systemRolesMap[roleNames.userAdminRole],
         created_at: new Date(),
@@ -49,7 +46,7 @@ module.exports = {
     // Customer Profiles
     const customerProfiles = [
       {
-        id: uuidConverter(uuidv4()),
+        id: uuidv4(),
         user_id: userMap['customer1@example.com'],
         preferences: JSON.stringify({
           notifications: true,
@@ -60,7 +57,7 @@ module.exports = {
         updated_at: new Date()
       },
       {
-        id: uuidConverter(uuidv4()),
+        id: uuidv4(),
         user_id: userMap['customer2@example.com'],
         preferences: JSON.stringify({
           notifications: false,
@@ -71,7 +68,7 @@ module.exports = {
         updated_at: new Date()
       },
       {
-        id: uuidConverter(uuidv4()),
+        id: uuidv4(),
         user_id: userMap['dual.role@example.com'],
         preferences: JSON.stringify({
           notifications: true,
@@ -85,7 +82,7 @@ module.exports = {
     // Serviceman Profiles
     const servicemanProfiles = [
       {
-        id: uuidConverter(uuidv4()),
+        id: uuidv4(),
         user_id: userMap['serviceman1@example.com'],
         services: JSON.stringify(['plumbing', 'electrical']),
         total_orders: 127,
@@ -104,7 +101,7 @@ module.exports = {
     //     updated_at: new Date()
     //   },
       {
-        id: uuidConverter(uuidv4()),
+        id: uuidv4(),
         user_id: userMap['dual.role@example.com'],
         services: JSON.stringify(['handyman', 'repairs']),
         total_orders: 45,

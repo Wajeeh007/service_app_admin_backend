@@ -1,9 +1,7 @@
-const {DataTypes} = require('sequelize')
-const sequelize = require('../custom_functions/db_connection.js')
-
 const { v4: uuidv4 } = require('uuid');
 
-const user = sequelize.define('users', {
+module.exports = (sequelize, DataTypes) => {
+  const User = sequelize.define('User', {
     id: {
       type: DataTypes.UUID,
       defaultValue: () => uuidv4(),
@@ -13,9 +11,7 @@ const user = sequelize.define('users', {
       type: DataTypes.STRING,
       allowNull: false,
       unique: true,
-      validate: {
-        isEmail: true
-      }
+      validate: { isEmail: true }
     },
     phone: {
       type: DataTypes.STRING(20),
@@ -32,40 +28,41 @@ const user = sequelize.define('users', {
       type: DataTypes.STRING
     },
     email_verified_at: {
-      type: DataTypes.DATE,
+      type: DataTypes.DATE
     },
     status: {
       type: DataTypes.ENUM('active', 'in-active', 'suspended'),
       defaultValue: 'active'
     }
   }, {
-    freezeTableName: true,
+    tableName: 'users',
     createdAt: 'created_at',
     updatedAt: 'updated_at'
   });
 
-  user.associate = function(models) {
-    user.belongsToMany(models.Role, {
-      through: models.UserRole,
+  User.associate = models => {
+    User.belongsToMany(models.Role, {
+      through: 'user_roles',
       foreignKey: 'user_id',
       otherKey: 'role_id',
       as: 'roles'
     });
-    
-    user.hasOne(models.CustomerProfile, {
+
+    User.hasOne(models.CustomerProfile, {
       foreignKey: 'user_id',
-      as: 'customerProfile'
+      as: 'customer_profile'
     });
-    
-    user.hasOne(models.ServicemanProfile, {
+
+    User.hasOne(models.ServicemanProfile, {
       foreignKey: 'user_id',
-      as: 'servicemanProfile'
+      as: 'serviceman_profile'
     });
-    
-    user.hasOne(models.admin, {
+
+    User.hasOne(models.AdminProfile, {
       foreignKey: 'user_id',
-      as: 'adminProfile'
+      as: 'admin_profile'
     });
   };
 
-module.exports = user
+  return User;
+};

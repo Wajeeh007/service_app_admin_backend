@@ -1,43 +1,59 @@
-const {DataTypes} = require('sequelize')
-const sequelize = require('../custom_functions/db_connection.js')
+const { v4: uuidv4 } = require('uuid');
 
-const serviceItem = sequelize.define('service_item', {
-    name: {
-        type: DataTypes.STRING,
-        allowNull: false,
-        unique: true
-    },
-    service_id: {
-        type: DataTypes.INTEGER,
-        allowNull: false,
-    },
-    sub_service_id: {
-        type: DataTypes.INTEGER,
-        allowNull: false,
-    },
-    sub_service_name: {
-        type: DataTypes.STRING,
-        allowNull: false,
-    },
-    price: {
-        type: DataTypes.DOUBLE,
-        allowNull: false,
-    },
-    discount: {
-        type: DataTypes.INTEGER,
-    },
-    image: {
-        type: DataTypes.STRING,
-        allowNull: false
-    },
-    status: {
-        type: DataTypes.INTEGER,
-        allowNull: false,
+module.exports = (sequelize, DataTypes) => {
+
+    const ServiceItem = sequelize.define('ServiceItem', {
+        id: {
+            type: DataTypes.UUID,
+            defaultValue: () => uuidv4(),
+            primaryKey: true
+        },
+        name: {
+            type: DataTypes.STRING,
+            allowNull: false,
+            unique: true
+        },
+        service_id: {
+            type: DataTypes.UUID,
+            allowNull: false,
+        },
+        sub_service_id: {
+            type: DataTypes.UUID,
+            allowNull: false,
+        },
+        sub_service_name: {
+            type: DataTypes.STRING,
+            allowNull: false,
+        },
+        price: {
+            type: DataTypes.DOUBLE,
+            allowNull: false,
+        },
+        discount: {
+            type: DataTypes.INTEGER,
+        },
+        image: {
+            type: DataTypes.STRING,
+            allowNull: false
+        },
+        status: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+        }
+    }, {
+        tableName: 'service_item',
+        createdAt: 'created_at',
+        updatedAt: 'updated_at'
+    })
+    ServiceItem.associate = models => {
+        ServiceItem.belongsTo(models.Service, {
+            foreignKey: 'service_id',
+            as: 'service'
+        });
+        ServiceItem.belongsTo(models.SubService, {
+            foreignKey: 'sub_service_id',
+            as: 'sub_service'
+        });
     }
-}, {
-    freezeTableName: true,
-    createdAt: 'created_at',
-    updatedAt: 'updated_at'
-})
-
-module.exports = serviceItem
+    return ServiceItem;
+}

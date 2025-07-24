@@ -13,7 +13,9 @@
     "db:seed-users": "npx sequelize db:seed --seed users.js",
     "db:seed-user-roles": "npx sequelize db:seed --seed user_roles.js",
     "db:seed-data": "npx sequelize db:seed --seed index.js",
-    "start": "npm run db:seed-data && nodemon app.js"
+    "start": "npm run db:seed-data && nodemon app.js",
+    "simple-start": "nodemon app.js"
+
   },
   "dependencies": {
     "bcrypt": "^6.0.0",

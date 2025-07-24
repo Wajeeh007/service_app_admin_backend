@@ -11,6 +11,7 @@ const binToUuid = (buffer) => {
   const part3 = hex.substr(0, 4);
   const part4 = hex.substr(12, 4);
   const part5 = hex.substr(16);
+  console.log('returning UUID')
   return `${part1}-${part2}-${part3}-${part4}-${part5}`;
 };
 

@@ -1,5 +1,5 @@
 const { v4: uuidv4 } = require('uuid');
-const uuidToBuffer = require('../custom_functions/uuid_to_binary_converter.js');
+const {uuidToBin} = require('../custom_functions/format_uuid.js');
 
 module.exports = {
   roles: {
@@ -16,5 +16,5 @@ module.exports = {
     delete_users: uuidv4(),
     access_reports: uuidv4(),
   },
-  uuidToBuffer,
+  uuidToBin,
 };

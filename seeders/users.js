@@ -1,7 +1,6 @@
 'use strict';
 const { v4: uuidv4 } = require('uuid');
 const bcrypt = require('bcrypt');
-const uuidConverter = require('../custom_functions/uuid_to_binary_converter.js')
 
 module.exports = {
   async up(queryInterface, Sequelize) {
@@ -11,7 +10,7 @@ module.exports = {
     
     const users = [
       {
-        id: uuidConverter(uuidv4()),
+        id: uuidv4(),
         email: 'super.admin@example.com',
         phone: '+1234567890',
         password_hash: defaultPassword,
@@ -22,7 +21,7 @@ module.exports = {
         updated_at: new Date()
       },
       {
-        id: uuidConverter(uuidv4()),
+        id: uuidv4(),
         email: 'user.admin@example.com',
         phone: '+1234567891',
         password_hash: defaultPassword,
@@ -33,7 +32,7 @@ module.exports = {
         updated_at: new Date()
       },
       {
-        id: uuidConverter(uuidv4()),
+        id: uuidv4(),
         email: 'customer1@example.com',
         phone: '+1234567892',
         password_hash: defaultPassword,
@@ -44,7 +43,7 @@ module.exports = {
         updated_at: new Date()
       },
       {
-        id: uuidConverter(uuidv4()),
+        id: uuidv4(),
         email: 'customer2@example.com',
         phone: '+1234567893',
         password_hash: defaultPassword,
@@ -55,7 +54,7 @@ module.exports = {
         updated_at: new Date()
       },
       {
-        id: uuidConverter(uuidv4()),
+        id: uuidv4(),
         email: 'serviceman1@example.com',
         phone: '+1234567894',
         password_hash: defaultPassword,
@@ -66,7 +65,7 @@ module.exports = {
         updated_at: new Date()
       },
       {
-        id: uuidConverter(uuidv4()),
+        id: uuidv4(),
         email: 'serviceman2@example.com',
         phone: '+1234567895',
         password_hash: defaultPassword,
@@ -77,7 +76,7 @@ module.exports = {
         updated_at: new Date()
       },
       {
-        id: uuidConverter(uuidv4()),
+        id: uuidv4(),
         email: 'dual.role@example.com',
         phone: '+1234567896',
         password_hash: defaultPassword,

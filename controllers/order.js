@@ -37,7 +37,7 @@ const getOrders = async (req, res, next) => {
 
         if(orderStatus !== undefined && orderStatus !== null) {
 
-            for (let i = 0; i < result.length; i++) {
+            for (let i = 0; i < result.length - 1; i++) {
                 const singleOrder = result[i].toJSON();
 
                 const customerInfo = await customer.findByPk(result[i].customer_id, {
@@ -55,7 +55,6 @@ const getOrders = async (req, res, next) => {
             }
         }
         
-        console.log('Returning Values')
         return returnJson({
             res: res,
             statusCode: 200,
