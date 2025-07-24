@@ -7,9 +7,16 @@
   "type": "commonjs",
   "main": "app.js",
   "scripts": {
-    "start": "nodemon app.js"
+    "db:seed-undo": "npx sequelize db:seed:undo --seed index.js",
+    "db:seed-permissions": "npx sequelize db:seed --seed permissions.js",
+    "db:seed-roles": "npx sequelize db:seed --seed roles.js",
+    "db:seed-users": "npx sequelize db:seed --seed users.js",
+    "db:seed-user-roles": "npx sequelize db:seed --seed user_roles.js",
+    "db:seed-data": "npx sequelize db:seed --seed index.js",
+    "start": "npm run db:seed-data && nodemon app.js"
   },
   "dependencies": {
+    "bcrypt": "^6.0.0",
     "cors": "^2.8.5",
     "dayjs": "^1.11.13",
     "dotenv": "^16.5.0",
@@ -19,6 +26,10 @@
     "jsonwebtoken": "^9.0.2",
     "multer": "^2.0.0",
     "mysql2": "^3.14.1",
-    "sequelize": "^6.37.7"
+    "sequelize": "^6.37.7",
+    "uuid": "^11.1.0"
+  },
+  "devDependencies": {
+    "sequelize-cli": "^6.6.2"
   }
 }

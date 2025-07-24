@@ -1,45 +1,8 @@
 const {DataTypes} = require('sequelize')
 const sequelize = require('../custom_functions/db_connection.js')
 
-const serviceman = sequelize.define('service_man', {
+const serviceman = sequelize.define('serviceman_profiles', {
 
-    name: {
-        type: DataTypes.STRING,
-        allowNull: false
-    },
-    email: {
-        type: DataTypes.STRING,
-        allowNull: false,
-        unique: true
-    },
-    phone_number: {
-        type: DataTypes.STRING,
-        allowNull: false,
-        unique: true
-    },
-    gender: {
-        type: DataTypes.ENUM('male', 'female', 'other'),
-        allowNull: false,
-    },
-    profile_image: {
-        type: DataTypes.STRING,
-        allowNull: false,
-    },
-    is_verified: {
-        type: DataTypes.INTEGER,
-        allowNull: false,
-        defaultValue: 0
-    },
-    account_suspended: {
-        type: DataTypes.INTEGER,
-        allowNull: false,
-        defaultValue: 0
-    },
-    status: {
-        type: DataTypes.INTEGER,
-        allowNull: false,
-        defaultValue: 1
-    },
     latitude: {
         type: DataTypes.DOUBLE,
         allowNull: false,
@@ -50,20 +13,14 @@ const serviceman = sequelize.define('service_man', {
         allowNull: false,
         defaultValue: 0.00
     },
-    rating: {
-        type: DataTypes.DOUBLE,
-        allowNull: false,
-        defaultValue: 0.0
-    },
     id_card_front: {
-        type: DataTypes.STRING,
+        type: DataTypes.TEXT,
     },
     id_card_back: {
-        type: DataTypes.STRING,
+        type: DataTypes.TEXT,
     },
     zone_id: {
         type: DataTypes.INTEGER,
-        allowNull: false,
     },
     total_orders: {
         type: DataTypes.INTEGER,
@@ -86,6 +43,14 @@ const serviceman = sequelize.define('service_man', {
     },
     note: {
         type: DataTypes.TEXT,
+    },
+    availability: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 0
+    },
+    services: {
+        type: DataTypes.JSON
     }
 }, {
     freezeTableName: true,
