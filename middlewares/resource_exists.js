@@ -12,6 +12,8 @@ function resourceExists(table_name) {
 
             if(resource === undefined || resource === null || resource.length === 0) {
                 return next(new errors.NotFoundError('Resource not found'))
+            } else {
+                req.resource = resource[0]
             }
 
             next()

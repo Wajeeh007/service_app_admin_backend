@@ -31,9 +31,24 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.DATE
     },
     status: {
-      type: DataTypes.ENUM('active', 'in-active', 'suspended'),
-      defaultValue: 'active'
-    }
+      type: DataTypes.ENUM('pending','active', 'inactive', 'suspended'),
+      defaultValue: 'pending',
+      allowNull: false,
+    },
+    suspension_note: {
+      type: DataTypes.TEXT,
+    },
+    gender: {
+      type: DataTypes.ENUM('male', 'female', 'other'),
+      defaultValue: 'male',
+      allowNull: false,
+    },
+    rating: {
+      type: DataTypes.DOUBLE,
+      defaultValue: 0.00,
+      allowNull: false,
+    },
+
   }, {
     tableName: 'users',
     createdAt: 'created_at',
