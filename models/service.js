@@ -18,6 +18,7 @@ module.exports = (sequelize, DataTypes) => {
         total_associated_services: {
             type: DataTypes.INTEGER,
             allowNull: false,
+            defaultValue: 0
         },
         image: {
             type: DataTypes.STRING,
@@ -26,9 +27,10 @@ module.exports = (sequelize, DataTypes) => {
         status: {
             type: DataTypes.INTEGER,
             allowNull: false,
+            defaultValue: 1
         }
     }, {
-        freezeTableName: true,
+        tableName: 'service',
         createdAt: 'created_at',
         updatedAt: 'updated_at'
     })

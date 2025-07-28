@@ -1,9 +1,7 @@
-const subService = require('../models/sub_service.js')
+const {Service, SubService, ServiceItem} = require('../models')
 const errors = require('../errors/index.js')
 const returnJson = require('../custom_functions/return_json.js')
 const serviceController = require('./service.js')
-const serviceItem = require('../models/service_item.js')
-const service = require('../models/service.js')
 const setPaginationData = require('../custom_functions/set_pagination_data.js')
 const setBodyValuesFunc = require('../custom_functions/set_body_values.js')
 
@@ -17,7 +15,7 @@ const getSubServices = async (req, res, next) => {
     })
 
     try {
-        const result = await subService.findAll({
+        const result = await SubService.findAll({
             limit: paginationData.includeLimits ? paginationData.limit : null,
             offset: paginationData.includeLimits ? paginationData.page * paginationData.limit : null,
             order: [['created_at', 'ASC']],
@@ -57,16 +55,16 @@ const addSubService = async (req, res, next) => {
 
         subServiceDetails.image = 'https://dummy_image_url.jpg'
 
-        const serviceName = await service.findOne({
+        const serviceName = await Service.findByPk(
+            subServiceDetails.service_id, {
             attributes: ['name'],
-            where: {id: subServiceDetails.service_id}
         })
 
         if(serviceName.name) {
 
-            subServiceDetails.service_type = serviceName.name
+            subServiceDetails.service_name = serviceName.name
 
-            const newSubService = await subService.create(
+            const newSubService = await SubService.create(
                 subServiceDetails,
                 {fields: ['name', 'service_id', 'service_name','image']})
 
@@ -83,6 +81,7 @@ const addSubService = async (req, res, next) => {
         }
         
     } catch (e) {
+        console.log(e)
         if(e.name === 'SequelizeUniqueConstraintError') {
             return next(new errors.BadRequestError('Sub-Service with this name already exists'))
         }
@@ -108,7 +107,7 @@ const updateSubService = async (req, res, next) => {
         /// Add code to update service items when service ID is changed.
 
         if(subServiceDetails.service_id) {
-            const oldServiceId = await subService.findOne({
+            const oldServiceId = await SubService.findOne({
                 attributes: ['service_id'],
                 where: {id: req.params.id}
             })
@@ -116,26 +115,39 @@ const updateSubService = async (req, res, next) => {
             req.body.oldServiceId = oldServiceId.service_id
         }
 
-        const newServiceName = await service.findOne({
+        const newServiceName = await Service.findOne({
             attributes: ['name'],
             where: {id: subServiceDetails.service_id}
         })
 
         if(newServiceName.name) {
 
-            subServiceDetails.service_type = newServiceName.name
+            subServiceDetails.service_name = newServiceName.name
 
-            await subService.update(
+            await SubService.update(
             {...subServiceDetails},
-            {where: {id: req.params.id}}
-        )
+            {where: {id: req.params.id}})
 
             if(req.body.oldServiceId) {
                 await serviceController.decrementSubServicesNo(req, res, next)
                 await serviceController.incrementSubServicesNo(req, res, next)
             }
 
-            const subServiceResult = await subService.findByPk(req.params.id)
+            const subServiceResult = await SubService.findByPk(req.params.id)
+            
+            if(subServiceDetails.service_id) {
+                await ServiceItem.update({
+                    service_id: subServiceResult.service_id,
+                    }, {where: {sub_service_id: req.params.id}
+                })
+            }
+
+            if(subServiceDetails.name) {
+                await ServiceItem.update({
+                    sub_service_name: subServiceResult.name,
+                    }, {where: {sub_service_id: req.params.id}
+                })
+            }
 
             return returnJson({
                 res: res,
@@ -160,13 +172,13 @@ const changeSubServiceStatus = async (req, res, next) => {
     const subServiceId = req.params.id
 
     try {
-        const status = await subService.findOne({
+        const status = await SubService.findOne({
             attributes: ['status'],
             where: {id: subServiceId}
         })
         
         if(status.status) {
-            await subService.update(
+            await SubService.update(
                 {status: status.status === 1 ? 0 : 1},
                 {where: {id: subServiceId}}
             )
@@ -195,20 +207,20 @@ const deleteSubService = async (req, res, next) => {
 
     try {
 
-        const oldServiceId = await subService.findOne({
+        const oldServiceId = await SubService.findOne({
             attributes: ['service_id'],
             where: {id: req.params.id}
         })
 
         req.body.oldServiceId = oldServiceId.service_id
 
-        await subService.destroy({
+        await SubService.destroy({
             where: {id: subServiceId}
         })
 
         await serviceController.decrementSubServicesNo(req, res, next)
 
-        await serviceItem.destroy({where: {sub_service_id: subServiceId}})
+        await ServiceItem.destroy({where: {sub_service_id: subServiceId}})
 
         return returnJson({
             res: res,
@@ -223,12 +235,12 @@ const deleteSubService = async (req, res, next) => {
 /// Increment the number of associated service item by one when a new item is added under this sub-service.
 const incrementServiceItemNo = async(req, res, next) => {
     
-    const associatedServiceItemsNo = await subService.findOne({
+    const associatedServiceItemsNo = await SubService.findOne({
         where: {id: req.body.sub_service_id},
         attributes: ['total_associated_items']
     })
 
-    await subService.update({
+    await SubService.update({
         total_associated_items: associatedServiceItemsNo.total_associated_items + 1},
         {where: {id: req.body.sub_service_id}}
     )
@@ -237,12 +249,12 @@ const incrementServiceItemNo = async(req, res, next) => {
 /// Decrement the number of associated service items by one when a new item is added under this service.
 const decrementServiceItemNo = async(req, res, next) => {
     
-    const associatedServiceItemsNo = await subService.findOne({
+    const associatedServiceItemsNo = await SubService.findOne({
         attributes: ['total_associated_items'],
         where: {id: req.body.sub_service_id},
     })
 
-    await subService.update({
+    await SubService.update({
         total_associated_items: associatedServiceItemsNo.total_associated_items - 1},
         {where: {id: req.body.sub_service_id}}
     )

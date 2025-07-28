@@ -1,8 +1,7 @@
-const subService = require('../models/sub_service.js')
+const {SubService, ServiceItem} = require('../models')
 const errors = require('../errors/index.js')
 const returnJson = require('../custom_functions/return_json.js')
 const subServiceController = require('./sub_service.js')
-const serviceItem = require('../models/service_item.js')
 const setPaginationData = require('../custom_functions/set_pagination_data.js')
 const setBodyValuesFunc = require('../custom_functions/set_body_values.js')
 
@@ -15,7 +14,7 @@ const getServiceItems = async (req, res, next) => {
     })
 
     try {
-        const result = await serviceItem.findAll({
+        const result = await ServiceItem.findAll({
             limit: paginationData.limit,
             offset: paginationData.page * paginationData.limit,
             order: [['created_at', 'ASC']],
@@ -31,7 +30,7 @@ const getServiceItems = async (req, res, next) => {
                 message: 'Fetched service items',
                 limit: paginationData.limit,
                 page: paginationData.page,
-                data: paginationData.result,
+                data: result,
             })
         }
     } catch (e) {
@@ -55,7 +54,7 @@ const addServiceItem = async (req, res, next) => {
 
         serviceItemDetails.image = 'https://dummy_image_url.jpg'
 
-        const subServiceDetails = await subService.findOne({
+        const subServiceDetails = await SubService.findOne({
             attributes: ['name', 'service_id'],
             where: {id: serviceItemDetails.sub_service_id}
         })
@@ -65,7 +64,7 @@ const addServiceItem = async (req, res, next) => {
             serviceItemDetails.sub_service_name = subServiceDetails.name
             serviceItemDetails.service_id = subServiceDetails.service_id
 
-            const newServiceItem = await serviceItem.create(
+            const newServiceItem = await ServiceItem.create(
                 serviceItemDetails,
                 {fields: [
                     'name',
@@ -113,35 +112,36 @@ const updateServiceItem = async (req, res, next) => {
         /// Add code to update service items when service ID is changed.
 
         if(serviceItemDetails.sub_service_id) {
-            const oldIds = await serviceItem.findOne({
+            const oldIds = await ServiceItem.findOne({
                 attributes: ['sub_service_id'],
                 where: {id: req.params.id}
             })
 
             req.body.sub_service_id = oldIds.sub_service_id
-        }
 
-        const newSubServiceName = await subService.findOne({
+            const newSubServiceName = await SubService.findOne({
             attributes: ['name', 'service_id'],
-            where: {id: serviceItemDetails.sub_service_id}
-        })
+            where: {id: serviceItemDetails.sub_service_id}})
+        
+            if(newSubServiceName !== null && newSubServiceName !== undefined && newSubServiceName.name && newSubServiceName.service_id) {
 
-        if(newSubServiceName.name && newSubServiceName.service_id) {
+                serviceItemDetails.sub_service_name = newSubServiceName.name
+                serviceItemDetails.service_id = newSubServiceName.service_id
 
-            serviceItemDetails.sub_service_name = newSubServiceName.name
-            serviceItemDetails.service_id = newSubServiceName.service_id
-
-            await subService.update(
-            {...serviceItemDetails},
-            {where: {id: req.params.id}}
-        )
-
-            if(req.body.oldServiceId) {
-                await subServiceController.decrementServiceItemNo(req, res, next)
-                await subServiceController.incrementServiceItemNo(req, res, next)
+                if(req.body.oldServiceId) {
+                    await subServiceController.decrementServiceItemNo(req, res, next)
+                    await subServiceController.incrementServiceItemNo(req, res, next)
+                }
+            } else {
+                return next(new errors.BadRequestError('Invalid Service ID'))
             }
+            
+            await ServiceItem.update(
+                {...serviceItemDetails},
+                {where: {id: req.params.id}}
+            )
 
-            const serviceItemResult = await serviceItem.findByPk(req.params.id)
+            const serviceItemResult = await ServiceItem.findByPk(req.params.id)
 
             return returnJson({
                 res: res,
@@ -149,10 +149,9 @@ const updateServiceItem = async (req, res, next) => {
                 message: 'Item Updated Successfully',
                 data: serviceItemResult,
             })
-        } else {
-            return next(new errors.BadRequestError('Invalid Service ID'))
-        }
+        } 
     } catch (e) {
+        console.log(e)
         if(e.name === 'SequelizeUniqueConstraintError') {
             return next(new errors.BadRequestError('Service Item with this name already exists'))
         }
@@ -166,12 +165,12 @@ const changeServiceItemStatus = async (req, res, next) => {
     const serviceItemId = req.params.id
 
     try {
-        const status = await serviceItem.findOne({
+        const status = await ServiceItem.findOne({
             attributes: ['status'],
             where: {id: serviceItemId}
         })
         
-        await serviceItem.update(
+        await ServiceItem.update(
             {status: status.status === 1 ? 0 : 1},
             {where: {id: serviceItemId}}
         )
@@ -191,7 +190,7 @@ const deleteServiceItem = async (req, res, next) => {
     const serviceItemId = req.params.id
 
     try {
-        const subServiceId = await serviceItem.findOne({
+        const subServiceId = await ServiceItem.findOne({
             attributes: ['sub_service_id'],
             where: {id: serviceItemId}
         })
@@ -200,7 +199,7 @@ const deleteServiceItem = async (req, res, next) => {
 
         await subServiceController.decrementServiceItemNo(req, res, next)
 
-        await serviceItem.destroy({where: {sub_service_id: serviceItemId}})
+        await ServiceItem.destroy({where: {sub_service_id: serviceItemId}})
 
         return returnJson({
             res: res,

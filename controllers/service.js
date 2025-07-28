@@ -1,10 +1,6 @@
-const service = require('../models/service.js')
 const errors = require('../errors/index.js')
 const returnJson = require('../custom_functions/return_json.js')
-const subService = require('../models/sub_service.js')
-const serviceItem = require('../models/service_item.js')
-const sequelize = require('../custom_functions/db_connection.js')
-const sqlQueries = require('../utils/sql_queries.js')
+const {Service, SubService, ServiceItem} = require('../models')
 const setPaginationData = require('../custom_functions/set_pagination_data.js')
 const setBodyValuesFunc = require('../custom_functions/set_body_values.js')
 
@@ -18,7 +14,7 @@ const getServices = async (req, res, next) => {
     })
 
     try {
-        const result = await service.findAll({
+        const result = await Service.findAll({
             limit: paginationData.includeLimits ? paginationData.limit : null,
             offset: paginationData.includeLimits ? paginationData.page * paginationData.limit : null,
             attributes: paginationData.includeLimits ? {exclude:  ['updated_at']} : ['id', 'name']
@@ -54,10 +50,13 @@ const addNewService = async (req, res, next) => {
     try {
 
         serviceDetails = setBodyValuesFunc(req.body)
+        serviceDetails.image = 'dumyy.png'
 
-        const newService = await service.create(
+        let newService = await Service.create(
             serviceDetails,
             {fields: ['name', 'desc', 'image']})
+
+        newService = await Service.findByPk(newService.id)    
 
         return returnJson({
             res: res,
@@ -87,12 +86,19 @@ const updateService = async (req, res, next) => {
 
         serviceDetails = setBodyValuesFunc(req.body)
 
-        await service.update(
+        await Service.update(
             {...serviceDetails},
             {where: {id: req.params.id}}
         )
 
-        const result = await service.findByPk(req.params.id)
+        const result = await Service.findByPk(req.params.id)
+        
+        if(serviceDetails.name) {
+            await SubService.update({
+            service_name: result.name,
+        }, {where: {service_id: req.params.id}
+        })
+        }
 
         return returnJson({
             res: res,
@@ -116,26 +122,20 @@ const changeServiceStatus = async (req, res, next) => {
     const serviceId = req.params.id
 
     try {
-        const status = await service.findOne({
-            attributes: ['status'],
-            where: {id: serviceId}
-        })
         
-        if(status.status) {
-            await service.update(
-            {status: status.status === 1 ? 0 : 1},
+        await Service.update(
+            {status: req.resource.status === 1 ? 0 : 1},
             {where: {id: serviceId}})
 
-            if(status.status === 1){
-            await subService.update(
+        if(req.resource.status === 1){
+            await SubService.update(
                 {status: 0},
                 {where: {service_id: serviceId}})
 
-            await serviceItem.update(
+            await ServiceItem.update(
                 {status: status.status === 1 ? 0 : 1},
                 {where: {service_id: serviceId}})
             }
-        }
 
         return returnJson({
             res: res,
@@ -143,6 +143,7 @@ const changeServiceStatus = async (req, res, next) => {
             message: 'Service Status Updated Successfully'
         })
     } catch(e) {
+        console.log(e)
         return next(new errors.CustomError('Internal Server Error'))
     }
 }
@@ -152,11 +153,11 @@ const deleteService = async (req, res, next) => {
     const serviceId = req.params.id
 
     try {
-        await service.destroy({where: {id: serviceId}})
+        await Service.destroy({where: {id: serviceId}})
 
-        await subService.destroy({where: {service_id: serviceId}})
+        await SubService.destroy({where: {service_id: serviceId}})
 
-        await serviceItem.destroy({where: {service_id: serviceId}})
+        await ServiceItem.destroy({where: {service_id: serviceId}})
 
         return returnJson({
             res: res,
@@ -172,12 +173,12 @@ const deleteService = async (req, res, next) => {
 /// to under this service.
 const incrementSubServicesNo = async(req, res, next) => {
     
-    const associatedSubServicesNo = await service.findOne({
+    const associatedSubServicesNo = await Service.findOne({
         where: {id: req.body.service_id},
         attributes: ['total_associated_services']
     })
 
-    await service.update({
+    await Service.update({
         total_associated_services: associatedSubServicesNo.total_associated_services + 1},
         {where: {id: req.body.service_id}}
     )
@@ -187,12 +188,12 @@ const incrementSubServicesNo = async(req, res, next) => {
 /// to under this service.
 const decrementSubServicesNo = async(req, res, next) => {
     
-    const associatedSubServicesNo = await service.findOne({
+    const associatedSubServicesNo = await Service.findOne({
         attributes: ['total_associated_services'],
         where: {id: req.body.oldServiceId},
     })
 
-    await service.update({
+    await Service.update({
         total_associated_services: associatedSubServicesNo.total_associated_services - 1},
         {where: {id: req.body.oldServiceId}}
     )

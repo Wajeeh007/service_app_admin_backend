@@ -16,13 +16,14 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.UUID,
             allowNull: false,
         },
-        service_type: {
+        service_name: {
             type: DataTypes.STRING,
             allowNull: false,
         },
         total_associated_items: {
             type: DataTypes.INTEGER,
             allowNull: false,
+            defaultValue: 0
         },
         image: {
             type: DataTypes.STRING,
@@ -31,6 +32,7 @@ module.exports = (sequelize, DataTypes) => {
         status: {
             type: DataTypes.INTEGER,
             allowNull: false,
+            defaultValue: 1
         }
     }, {
         tableName: 'sub_service',
