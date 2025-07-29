@@ -3,6 +3,8 @@ const {User, Role} = require('../models')
 const { Op } = require("sequelize");
 const returnJson = require('../custom_functions/return_json.js')
 const setPaginationData = require('../custom_functions/set_pagination_data.js')
+const setBodyValues = require('../custom_functions/set_body_values.js')
+const {UserStatuses} = require('../utils/statuses.js')
 
 const getCustomers = async (req, res, next) => {
 
@@ -14,7 +16,7 @@ const getCustomers = async (req, res, next) => {
     const status = req.query.status
 
     if(status !== undefined && status !== null) {
-        if(status !== 'active' && status !== 'inactive' && status !== 'suspended') {
+        if(!UserStatuses.includes(status)) {
             return next(new errors.BadRequestError('Invalid status provided'))
         }
     }
@@ -28,7 +30,8 @@ const getCustomers = async (req, res, next) => {
                 where: {status: status},
                 include: [{
                     association: 'customer_profile',
-                    attributes: {exclude: ['id','updated_at', 'preferences', 'user_id',]}
+                    attributes: {exclude: ['id','updated_at', 'preferences', 'user_id',]},
+                    required: true
                 }],
                 limit: paginationData.limit,
                 offset: paginationData.page * paginationData.limit,
@@ -39,12 +42,13 @@ const getCustomers = async (req, res, next) => {
             result = await User.findAll({
                 include: [{
                     association: 'customer_profile',
-                    attributes: {exclude: ['id','updated_at', 'preferences', 'user_id']}
+                    attributes: {exclude: ['id','updated_at', 'preferences', 'user_id']},
+                    required: true
                 }],
                 limit: paginationData.limit,
                 offset: paginationData.page * paginationData.limit,
                 order: [['created_at', 'DESC']],
-                attributes: {exclude:  ['updated_at', 'password_hash', 'profile_image']}
+                attributes: {exclude:  ['updated_at', 'password_hash', 'profile_image', 'suspension_note']}
             })
         }
 
@@ -115,7 +119,8 @@ const getCustomersStats = async (req, res, next) => {
                 model: Role,
                 as: 'roles',
                 where: { name: 'customer' },
-                through: { attributes: [] }
+                through: { attributes: [] },
+                required: true,
             }]
         })
 
@@ -125,17 +130,23 @@ const getCustomersStats = async (req, res, next) => {
                 model: Role,
                 as: 'roles',
                 where: { name: 'customer' },
-                through: { attributes: [] }
+                through: { attributes: [] },
+                required: true,
             }]
         })
 
         const in_active = await User.count({
-            where: {[Op.or]: [{status: 'in-active'}, {status: 'suspended'}]},
+            where: {
+                status: {
+                    [Op.or]: ['inactive', 'suspended']
+                },
+            },
             include: [{
                 model: Role,
                 as: 'roles',
                 where: { name: 'customer' },
-                through: { attributes: [] }
+                through: { attributes: [] },
+                required: true,
             }]
         })
 
@@ -159,16 +170,32 @@ const updateCustomerDetails = async (req, res, next) => {
 const changeCustomerStatus = async (req, res, next) => {
 
     const userId = req.params.id
-    const newStatus = req.body.status
+    const statusDetails = setBodyValues(req.body)
 
-    if(newStatus !== 'active' && newStatus !== 'in-active') {
+    if(statusDetails.status === undefined || statusDetails.status === null) {
+        return next(new errors.BadRequestError('No status provided'))
+    }
+
+    if(!UserStatuses.includes(statusDetails.status)) {
         return next(new errors.BadRequestError('Invalid status provided'))
     }
 
+    if(statusDetails.status === 'suspended' && (statusDetails.suspension_note === undefined || statusDetails.suspension_note === null)) {
+        return next(new errors.BadRequestError('No suspension note provided'))
+    } else if((statusDetails.suspension_note !== undefined && statusDetails.suspension_note !== null) 
+            && (statusDetails.status === undefined || statusDetails.status === null)) {
+                return next(new errors.BadRequestError('No status provided'))
+            }
+
     try {
-        
+
+        if((req.resource.status === 'active' || req.resource.status === 'inactive' || req.resource.status === 'suspended') && statusDetails.status === 'pending') {
+            return next(new errors.BadRequestError('Customer with active status can\'t be changed to pending'))
+        }
+
         await User.update({
-            status: newStatus,
+            status: statusDetails.status,
+            suspension_note: statusDetails.status === 'suspended' ? statusDetails.suspension_note : null
         }, {where: {id: userId}})
 
         return returnJson({

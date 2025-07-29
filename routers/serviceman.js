@@ -11,7 +11,7 @@ router.get('/:id', resourceExists('users'), servicemanController.getSingleServic
 // router.get('/get_suspended', servicemanController.getSuspendedServicemen)
 // router.patch('/:id', upload.single('image'), customerController.updateCustomerDetails)
 router.patch('/change_status/:id', resourceExists('users'), servicemanController.changeServicemanStatus)
-router.patch('/change_suspension_status/:id', resourceExists('users'), servicemanController.changeServicemanAccountSuspension)
+// router.patch('/change_suspension_status/:id', resourceExists('users'), servicemanController.changeServicemanAccountSuspension)
 router.delete('/:id', resourceExists('users'), servicemanController.deleteServiceman)
 
 module.exports = router

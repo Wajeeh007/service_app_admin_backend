@@ -9,7 +9,7 @@ router.get('/stats', customerController.getCustomersStats)
 router.get('/:id', resourceExists('users'), customerController.getSingleCustomer),
 // router.patch('/:id', upload.single('image'), customerController.updateCustomerDetails)
 router.patch('/change_status/:id', resourceExists('users'), customerController.changeCustomerStatus)
-router.patch('/change_suspension_status/:id', resourceExists('users'), customerController.changeCustomerAccountSuspension)
+// router.patch('/change_suspension_status/:id', resourceExists('users'), customerController.changeCustomerAccountSuspension)
 router.delete('/:id', resourceExists('users'), customerController.deleteCustomer)
 
 module.exports = router

@@ -1,9 +1,10 @@
 const errors = require('../errors/index.js')
 const returnJson = require('../custom_functions/return_json.js')
-const withdrawRequest = require('../models/withdraw_request.js')
+const {WithdrawRequests} = require('../models')
 const setBodyValuesFunc = require('../custom_functions/set_body_values.js')
 const setPaginationData = require('../custom_functions/set_pagination_data.js')
 const dayjs = require('dayjs');
+const {WithdrawRequestStatus} = require('../utils/statuses.js')
 
 const getWithdrawRequests = async (req, res, next) => {
     const paginationData = setPaginationData({
@@ -11,12 +12,10 @@ const getWithdrawRequests = async (req, res, next) => {
         page: req.query.page,
     })
 
-    let status
+    let status = req.query.status
 
-    if(req.query.status) {
-        if(req.query.status === 'pending' || req.query.status === 'approved' || req.query.status === 'settled' || req.query.status === 'denied') {
-            status = req.query.status
-        } else {
+    if(status !== undefined && status !== null) {
+        if(!WithdrawRequestStatus.includes(status) ) {
             return next(new errors.BadRequestError('Invalid status provided'))
         }
     }
@@ -25,7 +24,7 @@ const getWithdrawRequests = async (req, res, next) => {
 
         let result
         if(status) {
-            result = await withdrawRequest.findAll({
+            result = await WithdrawRequests.findAll({
                 where: {status: status},
                 limit: paginationData.limit,
                 offset: paginationData.page * paginationData.limit,
@@ -33,7 +32,7 @@ const getWithdrawRequests = async (req, res, next) => {
                 attributes: {exclude:  ['updated_at']}    
             })
         } else {
-            result = await withdrawRequest.findAll({
+            result = await WithdrawRequests.findAll({
                 limit: paginationData.limit,
                 page: paginationData.page * paginationData.limit,
                 order: [['created_at', 'ASC']],
@@ -50,6 +49,7 @@ const getWithdrawRequests = async (req, res, next) => {
                 data: result,
             })
     } catch(e) {
+        console.log(e)
         return next(new errors.InternalServerError('Internal Server Error. Retry'))
     }
 }
@@ -59,7 +59,7 @@ const changeWithdrawRequestStatus = async (req, res, next) => {
 
     const withdrawRequestDetails = setBodyValuesFunc(req.body)
 
-    if(withdrawRequestDetails.status !== 'approved' && withdrawRequestDetails.status !== 'settled' && withdrawRequestDetails.status !== 'denied') {
+    if(!WithdrawRequestStatus.includes(withdrawRequestDetails.status)) {
         return next(new errors.BadRequestError('Invalid status'))
     }
 
@@ -79,7 +79,7 @@ const changeWithdrawRequestStatus = async (req, res, next) => {
 
     try {
         
-        await withdrawRequest.update(
+        await WithdrawRequests.update(
             {...withdrawRequestDetails},
             {where: {id: withdrawRequestId},
             fields: withdrawRequestDetails.status === 'approved' ? ['status', 'transfer_date'] : withdrawRequestDetails.status === 'settled' ? ['status', 'transfer_date', 'receipt'] : ['status', 'note']

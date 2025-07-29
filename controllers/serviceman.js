@@ -3,6 +3,8 @@ const {Role, User} = require('../models')
 const { Op } = require("sequelize");
 const returnJson = require('../custom_functions/return_json.js')
 const setPaginationData = require('../custom_functions/set_pagination_data.js')
+const setBodyValues = require('../custom_functions/set_body_values.js')
+const {UserStatuses} = require('../utils/statuses.js')
 
 const getServicemen = async (req, res, next) => {
 
@@ -14,7 +16,7 @@ const getServicemen = async (req, res, next) => {
     const status = req.query.status
 
     if(status !== undefined && status !== null) {
-        if(status !== 'active' && status !== 'inactive' && status !== 'suspended') {
+        if(!UserStatuses.includes(status)) {
             return next(new errors.BadRequestError('Invalid status provided'))
         }
     }
@@ -28,19 +30,19 @@ const getServicemen = async (req, res, next) => {
                 where: {status: status},
                 include: [{
                     association: 'serviceman_profile',
-                    attributes: {exclude: ['id','updated_at', 'preferences', 'user_id', 'services', 'zone_id', 'longitude', 'latitude', 'services', 'availability']},
+                    attributes: {exclude: ['id','updated_at', 'preferences', 'user_id', 'services', 'zone_id', 'longitude', 'latitude', 'services', 'availability', 'note']},
                     required: true,
                 }],
                 limit: paginationData.limit,
                 offset: paginationData.page * paginationData.limit,
                 order: [['created_at', 'DESC']],
-                attributes: {exclude: ['updated_at', 'password_hash', 'profile_image', 'email_verified_at', 'suspension_note']}
+                attributes: {exclude: ['updated_at', 'password_hash', 'profile_image', 'email_verified_at']}
             })
         } else {
             result = await User.findAll({
                 include: [{
                     association: 'serviceman_profile',
-                    attributes: {exclude: ['id','updated_at', 'preferences', 'user_id', 'zone_id','latitude','longitude','services','availability','id_card_front','id_card_back','identification_number','identification_expiry','note']},
+                    attributes: {exclude: ['id','updated_at', 'preferences', 'user_id', 'zone_id','latitude','longitude','services','availability','id_card_front','id_card_back','identification_number','identification_expiry', 'note']},
                     required: true,
                 }],
                 limit: paginationData.limit,
@@ -202,14 +204,32 @@ const changeServicemanStatus = async (req, res, next) => {
 
     const servicemanId = req.params.id
 
-    try {
-        const status = await serviceman.findOne({
-            attributes: ['status'],
-            where: {id: servicemanId}
-        })
+    const statusDetails = setBodyValues(req.body)
 
-        await serviceman.update({
-            status: status.status === 1 ? 0 : 1
+    if(statusDetails.status === undefined || statusDetails.status === null) {
+        return next(new errors.BadRequestError('No status provided'))
+    }
+
+    if(!UserStatuses.includes(statusDetails.status)) {
+        return next(new errors.BadRequestError('Invalid status provided'))
+    }
+
+    if(statusDetails.status === 'suspended' && (statusDetails.suspension_note === undefined || statusDetails.suspension_note === null)) {
+        return next(new errors.BadRequestError('No suspension note provided'))
+    } else if((statusDetails.suspension_note !== undefined && statusDetails.suspension_note !== null) 
+            && (statusDetails.status === undefined || statusDetails.status === null)) {
+                return next(new errors.BadRequestError('No status provided'))
+    }
+
+    try {
+
+        if((req.resource.status === 'active' || req.resource.status === 'inactive' || req.resource.status === 'suspended') && statusDetails.status === 'pending') {
+            return next(new errors.BadRequestError('Serviceman with active status can\'t be changed to pending'))
+        }
+
+        await User.update({
+            status: statusDetails.status,
+            suspension_note: statusDetails.status === 'suspended' ? statusDetails.suspension_note : null
         }, {where: {id: servicemanId}})
 
         return returnJson({
@@ -223,29 +243,29 @@ const changeServicemanStatus = async (req, res, next) => {
     }
 }
 
-const changeServicemanAccountSuspension = async (req, res, next) => {
-     const userId = req.params.id
+// const changeServicemanAccountSuspension = async (req, res, next) => {
+//      const userId = req.params.id
     
-    if((req.resource.status === 'active' || req.resource.status === 'inactive') && (req.body.suspension_note === undefined || req.body.suspension_note === null)) {        
-        return next(new errors.BadRequestError('Suspension note is required'))
-    }
+//     if((req.resource.status === 'active' || req.resource.status === 'inactive') && (req.body.suspension_note === undefined || req.body.suspension_note === null)) {        
+//         return next(new errors.BadRequestError('Suspension note is required'))
+//     }
 
-    try {
-        await User.update({
-            status: req.resource.status === 'active' ? 'suspended' : 'active',
-            suspension_note: req.resource.status === 'active' ? req.body.suspension_note : null
-            }, {where: {id: userId}}
-        )
+//     try {
+//         await User.update({
+//             status: req.resource.status === 'active' ? 'suspended' : 'active',
+//             suspension_note: req.resource.status === 'active' ? req.body.suspension_note : null
+//             }, {where: {id: userId}}
+//         )
 
-        return returnJson({
-            res: res,
-            statusCode: 200,
-            message: 'Serviceman Account Suspension Updated Successfully'
-        })
-    } catch (e) {
-        return next(new errors.InternalServerError('Internal Server Error'))
-    }
-}
+//         return returnJson({
+//             res: res,
+//             statusCode: 200,
+//             message: 'Serviceman Account Suspension Updated Successfully'
+//         })
+//     } catch (e) {
+//         return next(new errors.InternalServerError('Internal Server Error'))
+//     }
+// }
 
 const deleteServiceman = async (req, res, next) => {
 
@@ -271,7 +291,7 @@ module.exports = {
   getSingleServiceman,
   updateCustomerDetails,
   changeServicemanStatus,
-  changeServicemanAccountSuspension,
+//   changeServicemanAccountSuspension,
   deleteServiceman,
   getNewServicemenRequests,
 

@@ -1,7 +1,12 @@
-const {DataTypes} = require('sequelize')
-const sequelize = require('../custom_functions/db_connection.js')
+const { v4: uuidv4 } = require('uuid');
+
 module.exports = (sequelize, DataTypes) => {
-    const withdrawRequest = sequelize.define('withdraw_requests', {
+    const WithdrawRequests = sequelize.define('WithdrawRequests', {
+        id: {
+            type: DataTypes.UUID,
+            defaultValue: () => uuidv4(),
+            primaryKey: true
+        },
         serviceman_id: {
             type: DataTypes.UUID,
             allowNull: false,
@@ -29,6 +34,7 @@ module.exports = (sequelize, DataTypes) => {
         status: {
             type: DataTypes.ENUM('pending', 'approved', 'settled', 'denied'),
             allowNull: false,
+            defaultValue: 'pending',
         },
         note: {
             type: DataTypes.TEXT,
@@ -41,9 +47,9 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.DATE,
         }
     }, {
-        freezeTableName: true,
+        tableName: 'withdraw_requests',
         createdAt: 'created_at',
         updatedAt: 'updated_at',
     })
-    return withdrawRequest;
+    return WithdrawRequests;
 }

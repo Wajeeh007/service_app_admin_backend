@@ -1,6 +1,6 @@
 const errors = require('../errors/index.js')
 const returnJson = require('../custom_functions/return_json.js')
-const withdrawMethod = require('../models/withdraw_method.js')
+const {WithdrawMethod} = require('../models')
 const setBodyValuesFunc = require('../custom_functions/set_body_values.js')
 const setPaginationData = require('../custom_functions/set_pagination_data.js')
 
@@ -23,7 +23,7 @@ const getWithdrawMethods = async (req, res, next) => {
         let result = {}
 
         if(req.query.status) {
-            result = await withdrawMethod.findAll({
+            result = await WithdrawMethod.findAll({
                 where: {status: req.query.status},
                 limit: paginationData.limit,
                 offset: paginationData.page * paginationData.limit,
@@ -31,7 +31,7 @@ const getWithdrawMethods = async (req, res, next) => {
                 attributes: {exclude:  ['updated_at']}    
             })
         } else {
-            result = await withdrawMethod.findAll({
+            result = await WithdrawMethod.findAll({
                 limit: paginationData.limit,
                 offset: paginationData.page * paginationData.limit,
                 order: [['created_at', 'ASC']],
@@ -68,14 +68,14 @@ const addWithdrawMethod = async (req, res, next) => {
         if(withdrawMethodDetails.status) delete withdrawMethodDetails.status
 
         if(withdrawMethodDetails.is_default && parseInt(withdrawMethodDetails.is_default) === 1) {
-            await withdrawMethod.update(
+            await WithdrawMethod.update(
                 {is_default: 0},
                 {where: {is_default: 1},
                 fields: ['is_default']
             })
         }
 
-        const newWithdrawMethod = await withdrawMethod.create(
+        const newWithdrawMethod = await WithdrawMethod.create(
             withdrawMethodDetails,
             {fields: ['name', 'field_type', 'field_name', 'placeholder_text', 'is_default', 'status']}
         )
@@ -88,17 +88,17 @@ const addWithdrawMethod = async (req, res, next) => {
         }) 
 
     } catch(e) {
-
+        console.log(e)
         if(e.name === 'SequelizeUniqueConstraintError') {
             return next(new errors.BadRequestError('Withdraw method with this name already exists'))
         }
 
-        if(e.parent.sqlState === '45000') {
-            return next(new errors.BadRequestError('Invalid data provided for field is_default'))
-        }
-
-        if(e.parent.errno === 1265) {
-            return next(new errors.BadRequestError('Invalid data provided for Field Type'))
+        if(e.parent) {
+            if(e.parent.sqlState && e.parent.sqlState === '45000') {
+               return next(new errors.BadRequestError('Invalid data provided for field is_default'))
+            } else if(e.parent.errno && e.parent.errno === 1265) {
+                return next(new errors.BadRequestError('Invalid data provided for Field Type'))       
+            }
         }
 
         return next(new errors.InternalServerError('Internal Server Error'))
@@ -116,14 +116,14 @@ const updateWithdrawMethod = async (req, res, next) => {
     try {
 
         withdrawMethodDetails = setBodyValuesFunc(req.body)
-        const withdrawMethodDetailsInDB = await withdrawMethod.findByPk(req.params.id)
+        const withdrawMethodDetailsInDB = await WithdrawMethod.findByPk(req.params.id)
 
         if(withdrawMethodDetailsInDB.is_default === 1 && parseInt(withdrawMethodDetails.is_default) === 0) {
             return next(new errors.BadRequestError('Cannot change default withdraw method status. Set new default method first'))
         }
 
         if(withdrawMethodDetails.is_default && parseInt(withdrawMethodDetails.is_default) === 1 && withdrawMethodDetailsInDB.status === 1) {
-            await withdrawMethod.update(
+            await WithdrawMethod.update(
                 {is_default: 0},
                 {where: {is_default: 1}
             }) 
@@ -137,12 +137,12 @@ const updateWithdrawMethod = async (req, res, next) => {
 
         if(withdrawMethodDetails.status) delete withdrawMethodDetails.status
         
-        await withdrawMethod.update(
+        await WithdrawMethod.update(
             {...withdrawMethodDetails},
             {where: {id: req.params.id}
         })
 
-        const result = await withdrawMethod.findByPk(req.params.id)
+        const result = await WithdrawMethod.findByPk(req.params.id)
 
         return returnJson({
             res: res,
@@ -172,7 +172,7 @@ const changeWithdrawMethodStatus = async (req, res, next) => {
     const withdrawMethodId = req.params.id
 
     try {
-        const withdrawMethodDetails = await withdrawMethod.findOne({
+        const withdrawMethodDetails = await WithdrawMethod.findOne({
             attributes: ['status', 'is_default'],
             where: {id: withdrawMethodId}
         })
@@ -181,7 +181,7 @@ const changeWithdrawMethodStatus = async (req, res, next) => {
             return next(new errors.BadRequestError('Cannot change status of default method'))
         }
 
-        await withdrawMethod.update(
+        await WithdrawMethod.update(
             {status: withdrawMethodDetails.status === 1 ? 0 : 1},
             {where: {id: withdrawMethodId}}
         )
@@ -201,7 +201,7 @@ const deleteWithdrawMethod = async (req, res, next) => {
 
     try {
 
-        const isDefault = await withdrawMethod.findOne({
+        const isDefault = await WithdrawMethod.findOne({
             attributes: ['is_default'],
             where: {id: withdrawMethodId}
         })
@@ -210,7 +210,7 @@ const deleteWithdrawMethod = async (req, res, next) => {
             return next(new errors.BadRequestError('Cannot delete default withdraw method. Set new default method first'))
         }
 
-        await withdrawMethod.destroy({where: {id: withdrawMethodId}})
+        await WithdrawMethod.destroy({where: {id: withdrawMethodId}})
 
         return returnJson({
             res: res,

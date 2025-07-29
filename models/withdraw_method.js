@@ -1,10 +1,13 @@
-const {DataTypes} = require('sequelize')
-const sequelize = require('../custom_functions/db_connection.js')
+const { v4: uuidv4 } = require('uuid');
 
 module.exports = (sequelize, DataTypes) => {
 
-    const withdrawMethod = sequelize.define('withdraw_methods', {
-
+    const WithdrawMethod = sequelize.define('WithdrawMethod', {
+        id: {
+            type: DataTypes.UUID,
+            defaultValue: () => uuidv4(),
+            primaryKey: true
+        },
         name: {
             type: DataTypes.STRING,
             allowNull: false,
@@ -33,9 +36,9 @@ module.exports = (sequelize, DataTypes) => {
             allowNull: false,
         },
     }, {
-        freezeTableName: true,
+        tableName: 'withdraw_methods',
         createdAt: 'created_at',
         updatedAt: 'updated_at',
     })
-    return withdrawMethod;
+    return WithdrawMethod;
 }
