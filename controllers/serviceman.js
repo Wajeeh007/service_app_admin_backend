@@ -165,35 +165,35 @@ const getServicemenStats = async (req, res, next) => {
     }
 }
 
-const getNewServicemenRequests = async (req, res, next) => {
-    const paginationData = setPaginationData({
-        limit: req.query.limit,
-        page: req.query.page,
-    })
+// const getNewServicemenRequests = async (req, res, next) => {
+//     const paginationData = setPaginationData({
+//         limit: req.query.limit,
+//         page: req.query.page,
+//     })
 
-    try {
-        const result = await User.findAll({
-            where: {status: 'pending'},
-            include: [{
-                association: 'serviceman_profile',
-                attributes: {exclude: ['updated_at', 'id', 'user_id', 'preferences', 'services', 'longitude', 'zone_id', 'latitude','total_orders', 'earnings','availability']},
-                required: true,
-            }],
-            attributes: {exclude: ['updated_at','password_hash','rating','suspension_note','profile_image']}
-        })
+//     try {
+//         const result = await User.findAll({
+//             where: {status: 'pending'},
+//             include: [{
+//                 association: 'serviceman_profile',
+//                 attributes: {exclude: ['updated_at', 'id', 'user_id', 'preferences', 'services', 'longitude', 'zone_id', 'latitude','total_orders', 'earnings','availability']},
+//                 required: true,
+//             }],
+//             attributes: {exclude: ['updated_at','password_hash','rating','suspension_note','profile_image']}
+//         })
 
-        return returnJson({
-            res: res,
-            statusCode: 200,
-            message: 'Fetched new servicemen requests',
-            data: result,
-            limit: paginationData.limit,
-            page: paginationData.page
-        })
-    } catch(e) {
-        return next(new errors.InternalServerError('Internal Server Error. Retry'))
-    }
-}
+//         return returnJson({
+//             res: res,
+//             statusCode: 200,
+//             message: 'Fetched new servicemen requests',
+//             data: result,
+//             limit: paginationData.limit,
+//             page: paginationData.page
+//         })
+//     } catch(e) {
+//         return next(new errors.InternalServerError('Internal Server Error. Retry'))
+//     }
+// }
 
 const updateCustomerDetails = async (req, res, next) => {
 
@@ -293,6 +293,6 @@ module.exports = {
   changeServicemanStatus,
 //   changeServicemanAccountSuspension,
   deleteServiceman,
-  getNewServicemenRequests,
+//   getNewServicemenRequests,
 
 }

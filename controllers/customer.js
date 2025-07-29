@@ -209,29 +209,29 @@ const changeCustomerStatus = async (req, res, next) => {
     }
 }
 
-const changeCustomerAccountSuspension = async (req, res, next) => {
-    const userId = req.params.id
+// const changeCustomerAccountSuspension = async (req, res, next) => {
+//     const userId = req.params.id
 
-    if((req.resource.status === 'active' || req.resource.status === 'inactive') && (req.body.suspension_note === undefined || req.body.suspension_note === null)) {        
-        return next(new errors.BadRequestError('Suspension note is required'))
-    }
+//     if((req.resource.status === 'active' || req.resource.status === 'inactive') && (req.body.suspension_note === undefined || req.body.suspension_note === null)) {        
+//         return next(new errors.BadRequestError('Suspension note is required'))
+//     }
 
-    try {
+//     try {
 
-        await User.update({
-            status: req.resource.status === 'active' ? 'suspended' : 'active',
-            suspension_note: req.resource.status === 'active' ? req.body.suspension_note : null
-            }, {where: {id: userId}})
+//         await User.update({
+//             status: req.resource.status === 'active' ? 'suspended' : 'active',
+//             suspension_note: req.resource.status === 'active' ? req.body.suspension_note : null
+//             }, {where: {id: userId}})
 
-        return returnJson({
-            res: res,
-            statusCode: 200,
-            message: 'Customer Account Suspension Updated Successfully'
-        })
-    } catch (e) {
-        return next(new errors.InternalServerError('Internal Server Error'))
-    }
-}
+//         return returnJson({
+//             res: res,
+//             statusCode: 200,
+//             message: 'Customer Account Suspension Updated Successfully'
+//         })
+//     } catch (e) {
+//         return next(new errors.InternalServerError('Internal Server Error'))
+//     }
+// }
 
 const deleteCustomer = async (req, res, next) => {
 
@@ -257,6 +257,6 @@ module.exports = {
   getSingleCustomer,
   updateCustomerDetails,
   changeCustomerStatus,
-  changeCustomerAccountSuspension,
+//   changeCustomerAccountSuspension,
   deleteCustomer,
 }
