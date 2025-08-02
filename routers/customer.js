@@ -7,6 +7,8 @@ const customerController = require('../controllers/customer.js')
 router.get('/get', customerController.getCustomers)
 router.get('/stats', customerController.getCustomersStats)
 router.get('/:id', resourceExists('users'), customerController.getSingleCustomer),
+router.get('/orders/:id', resourceExists('users', false), customerController.getCustomerOrders),
+router.get('/activity/:id', resourceExists('users', false), customerController.getCustomerActivity)
 // router.patch('/:id', upload.single('image'), customerController.updateCustomerDetails)
 router.patch('/change_status/:id', resourceExists('users'), customerController.changeCustomerStatus)
 // router.patch('/change_suspension_status/:id', resourceExists('users'), customerController.changeCustomerAccountSuspension)

@@ -51,6 +51,9 @@ module.exports = (sequelize, DataTypes) => {
         payment_status: {
             type: DataTypes.INTEGER,
             allowNull: false,
+        },
+        review_id: {
+            type: DataTypes.UUID,
         }
     }, {
         tableName: 'orders',
@@ -81,6 +84,11 @@ module.exports = (sequelize, DataTypes) => {
         Order.belongsTo(models.Zone, {
             foreignKey: 'zone_id',
             as: 'zone'
+        });
+
+        Order.belongsTo(models.Review, {
+            foreignKey: 'review_id',
+            as: 'review'
         });
     }
     return Order;
