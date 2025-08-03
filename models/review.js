@@ -42,24 +42,30 @@ module.exports = (sequelize, DataTypes) => {
         },
         rating_by_serviceman: {
             type: DataTypes.DECIMAL,
-        }
+        },
+        serviceman_review_date: {
+            type: DataTypes.DATE
+        },
+        customer_review_date: {
+            type: DataTypes.DATE
+        },
     }, {
         tableName: 'reviews',
         createdAt: 'created_at',
         updatedAt: 'updated_at',
     })
     Review.associate = models => {
-        Review.hasOne(models.User, {
+        Review.belongsTo(models.User, {
             foreignKey: 'customer_id',
-            as: 'customer'
+            as: 'customer_review'
         });
 
-        Review.hasOne(models.User, {
+        Review.belongsTo(models.User, {
             foreignKey: 'serviceman_id',
-            as: 'serviceman'
+            as: 'serviceman_review'
         })
 
-        Review.hasOne(models.Order, {
+        Review.belongsTo(models.Order, {
             foreignKey: 'order_id',
             as: 'order'
         })

@@ -39,9 +39,9 @@ module.exports = (sequelize, DataTypes) => {
             as: 'orders'
         });
         
-        Zone.hasMany(models.ServicemanProfile, {
+        Zone.hasMany(models.Serviceman, {
             foreignKey: 'zone_id',
-            as: 'serviceman_profiles'
+            as: 'serviceman'
         });
     }
 

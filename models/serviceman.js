@@ -1,7 +1,7 @@
 const { v4: uuidv4 } = require('uuid');
 
 module.exports = (sequelize, DataTypes) => {
-    const ServicemanProfile = sequelize.define('ServicemanProfile', {
+    const Serviceman = sequelize.define('Serviceman', {
         id: {
             type: DataTypes.UUID,
             primaryKey: true,
@@ -68,12 +68,27 @@ module.exports = (sequelize, DataTypes) => {
         updatedAt: 'updated_at',
     });
 
-    ServicemanProfile.associate = models => {
+    Serviceman.associate = models => {
 
-        ServicemanProfile.belongsTo(models.User, {
+        Serviceman.belongsTo(models.User, {
             foreignKey: 'user_id',
             as: 'user'
         });
+
+        Serviceman.hasMany(models.WithdrawRequests, {
+            foreignKey: 'serviceman_id',
+            as: 'withdraw_requests'
+        })
+
+        Serviceman.hasMany(models.Order, {
+            foreignKey: 'serviceman_id',
+            as: 'orders'
+        });
+
+        Serviceman.belongsTo(models.Zone, {
+            foreignKey: 'zone_id',
+            as: 'zone'
+        });
     }
-    return ServicemanProfile
+    return Serviceman
 }

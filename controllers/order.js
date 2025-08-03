@@ -1,10 +1,8 @@
 const errors = require('../errors/index.js')
-const order = require('../models/order.js')
-const customer = require('../models/customer.js')
-const serviceman = require('../models/serviceman.js')
-const serviceItem = require('../models/service_item.js')
+const {Order, User} = require('../models')
 const returnJson = require('../custom_functions/return_json.js')
 const setPaginationData = require('../custom_functions/set_pagination_data.js')
+const { Op } = require("sequelize");
 
 const getOrders = async (req, res, next) => {
 
@@ -27,7 +25,7 @@ const getOrders = async (req, res, next) => {
 
     try {
         
-        const result = await order.findAll({
+        const result = await Order.findAll({
             where: orderStatus !== undefined && orderStatus !== null ? {status: orderStatus} : {},
             limit: paginationData.limit,
             offset: paginationData.page * paginationData.limit,
@@ -40,12 +38,12 @@ const getOrders = async (req, res, next) => {
             for (let i = 0; i < result.length - 1; i++) {
                 const singleOrder = result[i].toJSON();
 
-                const customerInfo = await customer.findByPk(result[i].customer_id, {
-                attributes: ['name'],
+                const customerInfo = await User.findByPk(result[i].customer_id, {
+                    attributes: ['name'],
                 });
 
-                const servicemanInfo = await serviceman.findByPk(result[i].service_man_id, {
-                attributes: ['name'],
+                const servicemanInfo = await User.findByPk(result[i].serviceman_id, {
+                    attributes: ['name'],
                 });
 
                 singleOrder.customer = customerInfo;
@@ -71,27 +69,27 @@ const getOrders = async (req, res, next) => {
 
 const getOrdersStats = async (req, res, next) => {
     try {
-        const pending = await order.count({
+        const pending = await Order.count({
         where: {status: 'pending'}
         })
 
-        const accepted = await order.count({
+        const accepted = await Order.count({
             where: {status: 'accepted'}
         })
 
-        const ongoing = await order.count({
+        const ongoing = await Order.count({
             where: {status: 'ongoing'}
         })
 
-        const completed = await order.count({
+        const completed = await Order.count({
             where: {status: 'completed'}
         })
 
-        const cancelled = await order.count({
+        const cancelled = await Order.count({
             where: {status: 'cancelled'}
         })
 
-        const disputed = await order.count({
+        const disputed = await Order.count({
             where: {status: 'disputed'}
         })
 
@@ -106,8 +104,66 @@ const getOrdersStats = async (req, res, next) => {
     }
 }
 
+const getSingleUserOrders = async (req, res, next) => {
+    const userId = req.params.id
+
+    const paginationData = setPaginationData({
+        limit: req.query.limit,
+        page: req.query.page,
+    })
+
+    try {
+        let userOrders = []
+        
+        userOrders = await Order.findAll({
+            where: {[Op.or]: [{ customer_id: userId }, { serviceman_id: userId }]},
+            include: [{
+                association: 'customer',
+                attributes: [['name', 'customer_name']],
+                required: true,
+            },
+            {
+                association: 'serviceman',
+                attributes: [['name', 'serviceman_name']],
+                required: true,
+            }],
+            order: [['created_at', 'ASC']],
+            limit: paginationData.limit,
+            offset: paginationData.page * paginationData.limit,
+            attributes: {exclude: ['updated_at']}
+        })
+
+        if(userOrders.length > 0) {
+            userOrders = userOrders.map(u => {
+                const uJson = u.toJSON();
+                return {
+                    ...uJson,
+                    ...uJson.customer_profile,
+                    customer_profile: undefined,
+                    ...uJson,
+                    ...uJson.serviceman_profile,
+                    serviceman_profile: undefined
+                };
+            });
+        }
+
+        return returnJson({
+            res: res,
+            statusCode: 200,
+            message: 'Fetched User Orders',
+            data: userOrders,
+            limit: paginationData.limit,
+            page: paginationData.page
+        })
+
+    } catch(e) {
+        return next(new errors.InternalServerError('Internal Server Error. Retry'))
+    }
+}
+
 module.exports = {
     getOrders,
     getOrdersStats,
+    getSingleUserOrders
 
 }

@@ -19,6 +19,9 @@ function resourceExists(table_name, addDataToReq = true) {
 
             next()
         } catch (e) {
+            if(e.parent !== undefined && e.parent.errno !== undefined && e.parent.errno === 1146) {
+                return next(new errors.BadRequestError('Resource not found'))
+            }
             return next(new errors.CustomError('Internal Server Error. Retry'))
         }
     }

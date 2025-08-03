@@ -63,12 +63,12 @@ module.exports = (sequelize, DataTypes) => {
       as: 'roles'
     });
 
-    User.hasOne(models.CustomerProfile, {
+    User.hasOne(models.Customer, {
       foreignKey: 'user_id',
       as: 'customer_profile'
     });
 
-    User.hasOne(models.ServicemanProfile, {
+    User.hasOne(models.Serviceman, {
       foreignKey: 'user_id',
       as: 'serviceman_profile'
     });
@@ -77,7 +77,37 @@ module.exports = (sequelize, DataTypes) => {
       foreignKey: 'user_id',
       as: 'admin_profile'
     });
-  };
+
+    User.hasMany(models.Order, {
+      foreignKey: 'customer_id',
+      as: 'customer'
+    });
+
+    User.hasMany(models.Review, {
+      foreignKey: 'customer_id',
+      as: 'customer_review'
+    });
+
+    User.hasMany(models.WithdrawRequests, {
+      foreignKey: 'serviceman_id',
+      as: 'withdraw_requests'
+    });
+
+    // User.hasMany(models.Address, {
+    //   foreignKey: 'user_id',
+    //   as: 'addresses'
+    // });
+
+    User.hasMany(models.Order, {
+      foreignKey: 'serviceman_id',
+      as: 'serviceman'
+    })
+
+    User.hasMany(models.Review, {
+      foreignKey: 'serviceman_id',
+      as: 'serviceman_review'
+    });
+  }
 
   return User;
-};
+}

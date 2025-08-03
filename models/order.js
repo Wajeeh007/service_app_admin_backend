@@ -52,9 +52,6 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.INTEGER,
             allowNull: false,
         },
-        review_id: {
-            type: DataTypes.UUID,
-        }
     }, {
         tableName: 'orders',
         createdAt: 'created_at',
@@ -86,10 +83,10 @@ module.exports = (sequelize, DataTypes) => {
             as: 'zone'
         });
 
-        Order.belongsTo(models.Review, {
-            foreignKey: 'review_id',
+        Order.hasOne(models.Review, {
+            foreignKey: 'order_id',
             as: 'review'
-        });
+        })
     }
     return Order;
 }

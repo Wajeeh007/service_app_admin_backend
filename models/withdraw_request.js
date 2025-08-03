@@ -50,6 +50,13 @@ module.exports = (sequelize, DataTypes) => {
         tableName: 'withdraw_requests',
         createdAt: 'created_at',
         updatedAt: 'updated_at',
-    })
+    });
+
+    WithdrawRequests.associate = models => {
+        WithdrawRequests.belongsTo(models.User, {
+            foreignKey: 'serviceman_id',
+            as: 'withdraw_requests'
+        })
+    }
     return WithdrawRequests;
 }
