@@ -92,7 +92,7 @@ const getSingleCustomer = async (req, res, next) => {
 
         const result = {
             ...customerProfile.toJSON(),
-            ...req.resource.toJSON()
+            ...req.resource
         }
 
         delete result.password_hash

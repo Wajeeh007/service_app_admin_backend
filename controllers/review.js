@@ -212,9 +212,122 @@ const getReviewsByCustomer = async (req, res, next) => {
     }
 }
 
+/// This API fetches the percentages of each rating level.
+const getCustomerRatingStats = async (req, res, next) => {
+    const customerId = req.params.id
+
+    try {
+    
+        let ratingStats = []
+
+        for(let i = 0; i <= 4; i++) {
+            const rating = await Review.count({
+                where: {[Op.and]: [
+                    {customer_id: customerId},
+                    {rating_by_serviceman: {[Op.gt]: (i - 0.5), [Op.lt]: (i + 0.5)}}
+                ]},
+            })
+
+            ratingStats.push(rating)
+        }
+        
+        const totalRatings = await Review.count({
+            where: {
+                [Op.and]: [
+                    { customer_id: customerId },
+                    { rating_by_serviceman: { [Op.not]: null } }
+                ]}
+            });
+        
+        for(let i = 0; i < ratingStats.length; i++) {
+            if(ratingStats[i] === undefined || ratingStats[i] === null || ratingStats[i] === 0 || ratingStats[i] === NaN) {
+                ratingStats[i] = 0.0
+            } else {
+                ratingStats[i] = (ratingStats[i]/totalRatings) * 100
+            }
+        }    
+
+        const result = {
+            'one_star': ratingStats[0],
+            'two_star': ratingStats[1],
+            'three_star': ratingStats[2],
+            'four_star': ratingStats[3],
+            'five_star': ratingStats[4],
+            'total_ratings': totalRatings
+        }
+
+        return returnJson({
+            res: res,
+            statusCode: 200,
+            message: 'Fetched customer rating stats',
+            data: result
+        })
+    } catch(e) {
+        return next(new errors.InternalServerError())
+    }
+}
+
+const getServicemanRatingStats = async (req, res, next) => {
+    const servicemanId = req.params.id
+
+    try {
+    
+        let ratingStats = []
+
+        for(let i = 0; i <= 4; i++) {
+            const rating = await Review.findAll({
+                where: {[Op.and]: [
+                    {customer_id: servicemanId},
+                    {rating_by_customer: {[Op.gt]: (i - 0.5), [Op.lt]: (i + 0.5)}}
+                ]},
+                attributes: ['rating_by_customer']
+            })
+
+            ratingStats.push(rating)
+        }
+
+        const totalRatings = await Review.count({
+            where: {
+                [Op.and]: [
+                    { customer_id: servicemanId },
+                    { rating_by_customer: { [Op.not]: null } }
+                ]}
+            });
+
+        for(let i = 0; i < ratingStats.length; i++) {
+            if(ratingStats[i] === undefined || ratingStats[i] === null || ratingStats[i] === 0) {
+                ratingStats[i] = 0.0
+            } else {
+                ratingStats[i] = (ratingStats[i]/totalRatings) * 100
+            }
+        }
+        
+        const result = {
+            'one_star': ratingStats[0],
+            'two_star': ratingStats[1],
+            'three_star': ratingStats[2],
+            'four_star': ratingStats[3],
+            'five_star': ratingStats[4],
+            'total_ratings': totalRatings
+        }
+
+        return returnJson({
+            res: res,
+            statusCode: 200,
+            message: 'Fetched serviceman rating stats',
+            data: result
+        })
+    } catch(e) {
+        return next(new errors.InternalServerError())
+    }
+}
+
 module.exports = {
     getReviewsToServiceman,
     getReviewsByServicemen,
     getReviewsToCustomer,
-    getReviewsByCustomer
+    getReviewsByCustomer,
+    getCustomerRatingStats,
+    getServicemanRatingStats,
+
 }
