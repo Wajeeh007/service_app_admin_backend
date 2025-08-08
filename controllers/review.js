@@ -212,7 +212,7 @@ const getReviewsByCustomer = async (req, res, next) => {
     }
 }
 
-/// This API fetches the percentages of each rating level.
+/// This API fetches the percentages of each rating level for customer
 const getCustomerRatingStats = async (req, res, next) => {
     const customerId = req.params.id
 
@@ -220,11 +220,11 @@ const getCustomerRatingStats = async (req, res, next) => {
     
         let ratingStats = []
 
-        for(let i = 0; i <= 4; i++) {
+        for(let i = 1; i <= 5; i++) {
             const rating = await Review.count({
                 where: {[Op.and]: [
                     {customer_id: customerId},
-                    {rating_by_serviceman: {[Op.gt]: (i - 0.5), [Op.lt]: (i + 0.5)}}
+                    {rating_by_serviceman: {[Op.gte]: (i - 1), [Op.lte]: (i)}}
                 ]},
             })
 
@@ -267,6 +267,7 @@ const getCustomerRatingStats = async (req, res, next) => {
     }
 }
 
+/// This API fetches the percentages of each rating level for serviceman
 const getServicemanRatingStats = async (req, res, next) => {
     const servicemanId = req.params.id
 
@@ -274,13 +275,12 @@ const getServicemanRatingStats = async (req, res, next) => {
     
         let ratingStats = []
 
-        for(let i = 0; i <= 4; i++) {
-            const rating = await Review.findAll({
+        for(let i = 1; i <= 5; i++) {
+            const rating = await Review.count({
                 where: {[Op.and]: [
-                    {customer_id: servicemanId},
-                    {rating_by_customer: {[Op.gt]: (i - 0.5), [Op.lt]: (i + 0.5)}}
+                    {serviceman_id: servicemanId},
+                    {rating_by_customer: {[Op.gte]: (i - 1), [Op.lte]: (i)}}
                 ]},
-                attributes: ['rating_by_customer']
             })
 
             ratingStats.push(rating)
@@ -289,7 +289,7 @@ const getServicemanRatingStats = async (req, res, next) => {
         const totalRatings = await Review.count({
             where: {
                 [Op.and]: [
-                    { customer_id: servicemanId },
+                    { serviceman_id: servicemanId },
                     { rating_by_customer: { [Op.not]: null } }
                 ]}
             });

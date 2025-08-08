@@ -31,7 +31,7 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.DATE
     },
     status: {
-      type: DataTypes.ENUM('pending','active', 'inactive', 'suspended'),
+      type: DataTypes.ENUM('pending','active', 'inactive', 'declined', 'suspended'),
       defaultValue: 'pending',
       allowNull: false,
     },
@@ -106,6 +106,11 @@ module.exports = (sequelize, DataTypes) => {
     User.hasMany(models.Review, {
       foreignKey: 'serviceman_id',
       as: 'serviceman_review'
+    });
+
+    User.hasMany(models.ServicemanService, {
+      foreignKey: 'serviceman_id',
+      as: 'serviceman_service'
     });
   }
 

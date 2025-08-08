@@ -294,7 +294,7 @@ const changeCustomerStatus = async (req, res, next) => {
         return next(new errors.BadRequestError('Invalid status provided'))
     }
 
-    if(statusDetails.status === 'suspended' && (statusDetails.suspension_note === undefined || statusDetails.suspension_note === null)) {
+    if((statusDetails.status === 'suspended' || statusDetails.status === 'declined') && (statusDetails.suspension_note === undefined || statusDetails.suspension_note === null)) {
         return next(new errors.BadRequestError('No suspension note provided'))
     } else if((statusDetails.suspension_note !== undefined && statusDetails.suspension_note !== null) 
             && (statusDetails.status === undefined || statusDetails.status === null)) {
@@ -307,10 +307,24 @@ const changeCustomerStatus = async (req, res, next) => {
             return next(new errors.BadRequestError('Customer with active status can\'t be changed to pending'))
         }
 
+        const orders = await Order.findAll({
+            where: {
+                customer_id: userId,
+                status: {[Op.or]: ['pending', 'accepted', 'ongoing',]}
+            },
+            attributes: ['id']
+        })
+
+        if(orders.length > 0) {
+            return next(new errors.CustomError('Customer has pending orders', 400))
+        }
+
         await User.update({
             status: statusDetails.status,
             suspension_note: statusDetails.status === 'suspended' ? statusDetails.suspension_note : null
         }, {where: {id: userId}})
+
+
 
         return returnJson({
             res: res,
@@ -319,7 +333,7 @@ const changeCustomerStatus = async (req, res, next) => {
         })
 
     } catch (e) {
-        return next(new errors.InternalServerError('Internal Server Error'))
+        return next(new errors.InternalServerError())
     }
 }
 
@@ -347,23 +361,25 @@ const changeCustomerStatus = async (req, res, next) => {
 //     }
 // }
 
-const deleteCustomer = async (req, res, next) => {
+// const deleteCustomer = async (req, res, next) => {
 
-    const userId = req.params.id
+//     const userId = req.params.id
 
-    try {
-        await User.destroy({where: {id: userId}})
+//     try {
+//         await User.destroy({
+//             where: {id: userId}
+//         })
 
-        return returnJson({
-            res: res, 
-            statusCode: 200,
-            message: 'Customer Account Deleted Successfully'
-        })
-    } catch (e) {
-        return next(new errors.InternalServerError('Internal Server Error'))
-    }
+//         return returnJson({
+//             res: res, 
+//             statusCode: 200,
+//             message: 'Customer Account Deleted Successfully'
+//         })
+//     } catch (e) {
+//         return next(new errors.InternalServerError())
+//     }
 
-}
+// }
 
 module.exports = {
   getCustomers,
@@ -372,7 +388,7 @@ module.exports = {
   updateCustomerDetails,
   changeCustomerStatus,
 //   changeCustomerAccountSuspension,
-  deleteCustomer,
+//   deleteCustomer,
   getCustomerActivity
 
 }

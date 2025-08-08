@@ -59,9 +59,6 @@ module.exports = (sequelize, DataTypes) => {
             allowNull: false,
             defaultValue: 0
         },
-        services: {
-            type: DataTypes.JSON
-        }
     }, {
         tableName: 'serviceman_profiles',
         createdAt: 'created_at',

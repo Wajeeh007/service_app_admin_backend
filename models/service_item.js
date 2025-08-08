@@ -50,9 +50,21 @@ module.exports = (sequelize, DataTypes) => {
             foreignKey: 'service_id',
             as: 'service'
         });
+
         ServiceItem.belongsTo(models.SubService, {
             foreignKey: 'sub_service_id',
             as: 'sub_service'
+        });
+
+        ServiceItem.belongsToMany(models.Serviceman, {
+            foreignKey: 'service_item_id',
+            through: 'serviceman_services',
+            as: 'serviceman'
+        });
+
+        ServiceItem.hasMany(models.Order, {
+            foreignKey: 'service_item_id',
+            as: 'orders'
         });
     }
     return ServiceItem;
