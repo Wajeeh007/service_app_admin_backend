@@ -1,5 +1,5 @@
 const errors = require('../errors/index.js')
-const {Order, User} = require('../models')
+const {Order, User, Serviceman, Customer, ServiceItem} = require('../models')
 const returnJson = require('../custom_functions/return_json.js')
 const setPaginationData = require('../custom_functions/set_pagination_data.js')
 const { Op } = require("sequelize");
@@ -161,9 +161,42 @@ const getSingleUserOrders = async (req, res, next) => {
     }
 }
 
+const getSingleOrder = async (req, res, next) => {
+    
+    try {
+        const customerBasicInfo = await User.findByPk(req.resource.customer_id, {
+            attributes: ['name', 'email', 'phone', 'profile_image', 'gender','rating'],
+        })
+
+        const servicemanBasicInfo = await User.findByPk(req.resource.serviceman_id, {
+            attributes: ['name', 'email', 'phone', 'profile_image', 'gender','rating'],
+        })
+
+        const serviceItem = await ServiceItem.findByPk(req.resource.service_item_id, {
+            attributes: {exclude: ['updated_at']}
+        })
+
+        const result = {
+            ...req.resource,
+            customerBasicInfo,
+            servicemanBasicInfo,
+            serviceItem
+        }
+
+        return returnJson({
+            res: res,
+            statusCode: 200,
+            message: 'Fetched order',
+            data: result
+        })
+    } catch (e) {
+        return next(new errors.InternalServerError())
+    }
+}
+
 module.exports = {
     getOrders,
     getOrdersStats,
-    getSingleUserOrders
-
+    getSingleUserOrders,
+    getSingleOrder
 }

@@ -1,9 +1,8 @@
 const returnJson = require('../custom_functions/return_json.js')
-const sequelize = require('../custom_functions/db_connection.js')
 const errors = require('../errors/index.js')
 const formatPolygon = require('../custom_functions/format_polygon.js')
 const sqlQueries = require('../utils/sql_queries.js')
-const zones = require('../models/zones.js')
+const {Zone, sequelize} = require('../models')
 const {Sequelize} = require('sequelize')
 
 /// Get zones for listing
@@ -21,7 +20,7 @@ const getZones = async (req, res, next) => {
     }
 
     try {
-        let result = await zones.findAll({
+        let result = await Zone.findAll({
             limit: limit,
             offset: page * limit,
             attributes: {exclude: ['created_at', 'updated_at', 'poly_wkt']}
@@ -42,6 +41,7 @@ const getZones = async (req, res, next) => {
             })
         }
     } catch (e) {
+        console.log(e)
         return next(new errors.CustomError('Error fetching zones'))
     }
 }
@@ -56,22 +56,21 @@ const addZone = async (req, res, next) => {
 
     try {
 
-        await sequelize.query(sqlQueries.addNewZone, {
-                replacements: [
-                    zoneDetails.name,
-                    zoneDetails.desc, 
-                    zoneDetails.polylines
-                ]
-            });
+        let newZone = await Zone.create(
+            {
+                name: zoneDetails.name,
+                desc: zoneDetails.desc,
+                status: 1,
+                polylines: Sequelize.fn(
+                    'ST_SRID',
+                    Sequelize.fn('ST_GeomFromText', zoneDetails.polylines),
+                    4326
+                )
+            }, 
+            {fields: ['name', 'desc', 'status', 'polylines']}
+        )
         
-        const lastRow = await zones.findOne({
-            order: [['created_at', 'DESC']],
-            attributes: {exclude: ['updated_at']}
-        });
-
-        let newZone = lastRow['dataValues'];
-        
-        newZone.polylines = formatPolygon.wktToCoordinates(newZone.polylines)
+        newZone.polylines = formatPolygon.parsePolygonToLatLngString(zoneDetails.polylines);
 
         return returnJson({
             res: res,
@@ -124,7 +123,7 @@ const updateZone = async (req, res, next) => {
 
 
     try {
-        await zones.update(
+        await Zone.update(
             {...details},
             {
                 where: {id: zoneId},
@@ -153,7 +152,7 @@ const deleteZone = async (req, res, next) => {
     const zoneId = req.params.id
 
     try {
-        await zones.destroy({
+        await Zone.destroy({
             where: {id: zoneId}
         })
         return returnJson({
@@ -172,12 +171,12 @@ const changeZoneStatus = async (req, res, next) => {
 
     try {
 
-        const status = await zones.findOne({
+        const status = await Zone.findOne({
             attributes: ['status'],
             where: {id: zoneId}
         })
         
-        await zones.update(
+        await Zone.update(
             {status: status.status === 1 ? 0 : 1},
             {
                 where: {id: zoneId},

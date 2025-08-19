@@ -26,6 +26,7 @@ module.exports = (sequelize, DataTypes) => {
         order_vol: {
             type: DataTypes.ENUM('very_low', 'low', 'medium', 'high', 'very_high'),
             allowNull: false,
+            defaultValue: 'very_low'
         }
     }, {
         tableName: 'zones',

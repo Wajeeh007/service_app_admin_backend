@@ -41,7 +41,7 @@ const getSubServices = async (req, res, next) => {
 
 /// Add new sub-service with the provided details
 //TODO: Add code for handling image upload.
-const addSubService = async (req, res, next) => {
+const   addSubService = async (req, res, next) => {
 
     if(!req.body.name || !req.body.service_id) {
         return next(new errors.BadRequestError('Invalid/Empty data')) 

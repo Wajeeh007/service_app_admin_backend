@@ -11,7 +11,7 @@ function wktToCoordinates(poly) {
       return next(new errors.BadRequestError('Invalid polygon coordinates'))
     }
 
-    return coords.map(([x, y]) => `${y} ${x}`).join(', ');
+    return coords.map(([x, y]) => `${x} ${y}`).join(', ');
 }
 
 function coordinatesToWKT(wkt) {
@@ -31,5 +31,15 @@ function coordinatesToWKT(wkt) {
     return `POLYGON((${flippedCoords.join(', ')}))`;
 }
 
+function parsePolygonToLatLngString(wkt) {
+  const str = String(wkt);
 
-module.exports = {wktToCoordinates, coordinatesToWKT};
+  // Match the inside of POLYGON(( ... ))
+  const match = str.match(/POLYGON\s*\(\((.+)\)\)/i);
+  if (!match) throw new Error('Invalid WKT POLYGON string: ' + str);
+
+  return match[1].trim();
+}
+
+
+module.exports = {wktToCoordinates, coordinatesToWKT, parsePolygonToLatLngString};

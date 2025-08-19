@@ -7,5 +7,6 @@ const orderController = require('../controllers/order.js')
 router.get('/get', orderController.getOrders)
 router.get('/stats', orderController.getOrdersStats)
 router.get('/user/:id', resourceExists('users', false), orderController.getSingleUserOrders)
+router.get('/:id', resourceExists('orders'), orderController.getSingleOrder)
 
 module.exports = router
