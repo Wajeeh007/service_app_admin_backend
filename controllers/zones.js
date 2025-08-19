@@ -1,8 +1,7 @@
 const returnJson = require('../custom_functions/return_json.js')
 const errors = require('../errors/index.js')
 const formatPolygon = require('../custom_functions/format_polygon.js')
-const sqlQueries = require('../utils/sql_queries.js')
-const {Zone, sequelize} = require('../models')
+const {Zone} = require('../models')
 const {Sequelize} = require('sequelize')
 
 /// Get zones for listing
