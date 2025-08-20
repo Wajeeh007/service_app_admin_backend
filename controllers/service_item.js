@@ -17,6 +17,11 @@ const getServiceItems = async (req, res, next) => {
         const result = await ServiceItem.findAll({
             limit: paginationData.limit,
             offset: paginationData.page * paginationData.limit,
+            include: [{
+                association: 'sub_service',
+                attributes: ['id', 'name'],
+                required: true,
+            }],
             order: [['created_at', 'ASC']],
             attributes: {exclude:  ['updated_at']}
         })

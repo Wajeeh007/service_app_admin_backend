@@ -1,5 +1,5 @@
 const errors = require('../errors/index.js')
-const {Order, User, Serviceman, Customer, ServiceItem} = require('../models')
+const {Order, User, Serviceman, Customer, ServiceItem, Address} = require('../models')
 const returnJson = require('../custom_functions/return_json.js')
 const setPaginationData = require('../custom_functions/set_pagination_data.js')
 const { Op } = require("sequelize");
@@ -173,14 +173,30 @@ const getSingleOrder = async (req, res, next) => {
         })
 
         const serviceItem = await ServiceItem.findByPk(req.resource.service_item_id, {
-            attributes: {exclude: ['updated_at']}
+            attributes: {exclude: ['updated_at']},
+            include: [{
+                association: 'service',
+                attributes: ['id', 'name'],
+                required: true,
+            },
+            {
+                association: 'sub_service',
+                attributes: ['id', 'name'],
+                required: true,
+            }],
+            attributes: {exclude: ['updated_at', 'service_id', 'sub_service_id', 'sub_service_name', 'created_at']}
+        })
+        
+        const address = await Address.findByPk(req.resource.customer_address_id, {
+            attributes: {exclude: ['updated_at', 'created_at', 'cusotmer_id']}
         })
 
         const result = {
             ...req.resource,
-            customerBasicInfo,
-            servicemanBasicInfo,
-            serviceItem
+            customer: customerBasicInfo,
+            serviceman: servicemanBasicInfo,
+            service_item: serviceItem.toJSON(),
+            address,
         }
 
         return returnJson({

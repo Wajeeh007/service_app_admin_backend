@@ -52,6 +52,10 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.INTEGER,
             allowNull: false,
         },
+        accepted_at: {
+            type: DataTypes.DATE,
+        },
+
     }, {
         tableName: 'orders',
         createdAt: 'created_at',
@@ -68,10 +72,10 @@ module.exports = (sequelize, DataTypes) => {
             as: 'serviceman'
         });
 
-        // Order.belongsTo(models.Address, {
-        //     foreignKey: 'customer_address_id',
-        //     as: 'customer_address'
-        // });
+        Order.belongsTo(models.Address, {
+            foreignKey: 'customer_address_id',
+            as: 'customer_address'
+        });
 
         Order.belongsTo(models.ServiceItem, {
             foreignKey: 'service_item_id',
