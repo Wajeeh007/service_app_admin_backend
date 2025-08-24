@@ -2,7 +2,7 @@ const {User, Order, Zone, sequelize} = require('../models')
 const { Op } = require("sequelize");
 const returnJson = require('../custom_functions/return_json.js')
 const errors = require('../errors/index.js')
-const {ZoneWiseTimePeriodSelection} = require('../utils/statuses.js')
+const {ZoneWiseTimePeriodSelection, AdminEarningTimePeriodSelection} = require('../utils/statuses.js')
 
 const getUserStats = async (req, res, next) => {
 
@@ -136,8 +136,93 @@ const getZoneWiseTimePeriodStats = async (req, res, next) => {
 
 }
 
+const getAdminEarningStats = async (req, res, next) => {
+    const timePeriod = req.query.time_period
+    const zoneId = req.query.zone_id
+
+    if(timePeriod === undefined || timePeriod === null || AdminEarningTimePeriodSelection.includes(timePeriod) === false) {
+        return next(new errors.BadRequestError('Invalid time period provided'))
+    }
+
+    if(zoneId === undefined || zoneId === null) {
+        return next(new errors.BadRequestError('No zone id provided'))
+    }
+
+    try {
+        const now = new Date()
+        let upperLimit;
+        let lowerLimit;
+        
+        let max
+        let min
+        let avg
+        let dailyGraphPoints
+        let monthlyGraphPoints
+        let yearlyGraphPoints
+        let result = []
+
+        if(timePeriod === 'Daily') {
+            upperLimit = new Date(now.getFullYear(), now.getMonth() + 1, 0)
+            lowerLimit = new Date(now.getFullYear(), now.getMonth(), 1)
+        }
+
+        const orders = await Order.findAll({
+            where: {
+                created_at: {[Op.between]: [lowerLimit, upperLimit]},
+                zone_id: zoneId
+            },
+            attributes: ['commission_amount', 'created_at'],
+            order: [['created_at', 'ASC']]
+        })
+        
+        if(orders.length > 0) {
+            result = []
+
+            for(let i = 0; i < orders.length; i++) {
+                if( i === 0) {
+                    result.push({
+                        x: orders[i].created_at.getDate(),
+                        y: Number(orders[i].commission_amount)
+                    })
+                } else {
+                    if(orders[i].created_at.getDate() === orders[i-1].created_at.getDate()) {
+                        result[result.length - 1].y += Number(orders[i].commission_amount)
+                    } else {
+                        result.push({
+                            x: orders[i].created_at.getDate(),
+                            y: Number(orders[i].commission_amount)
+                        })
+                    }
+                }
+            }
+
+            max = Math.max(...result.map(item => item.y));
+            min = Math.min(...result.map(item => item.y));
+            const yValues = result.map(item => item.y);
+            avg = yValues.reduce((a, b) => a + b, 0) / yValues.length;
+
+        }
+
+        return returnJson({
+                res: res,
+            statusCode: 200,
+                message: 'Fetched admin earning stats',
+                data: {
+                    min: orders.length > 0 ? min : 0,
+                    max: orders.length > 0 ? max : 0,
+                    avg: orders.length > 0 ? avg : 0,
+                    daily_graph_points: orders.length > 0 ? result : null
+                }
+            })
+
+    } catch(e) {
+        console.log(e)
+        return next(new errors.InternalServerError())
+    }
+}
+
 module.exports = {
     getUserStats,
-    getZoneWiseTimePeriodStats
-
-}
+    getZoneWiseTimePeriodStats,
+    getAdminEarningStats
+}   
