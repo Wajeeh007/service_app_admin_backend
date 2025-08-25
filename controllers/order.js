@@ -1,5 +1,5 @@
 const errors = require('../errors/index.js')
-const {Order, User, Serviceman, Customer, ServiceItem, Address} = require('../models')
+const {Order, User, ServiceItem, Address} = require('../models')
 const returnJson = require('../custom_functions/return_json.js')
 const setPaginationData = require('../custom_functions/set_pagination_data.js')
 const { Op } = require("sequelize");
@@ -30,28 +30,24 @@ const getOrders = async (req, res, next) => {
             limit: paginationData.limit,
             offset: paginationData.page * paginationData.limit,
             order: [['created_at', 'ASC']],
-            attributes: {exclude: ['updated_at']}
+            attributes: {exclude: ['updated_at', 'customer_id', 'serviceman_id', 'service_item_id']},
+            include: [
+                {
+                    association: 'service_item',
+                    attributes: ['id','name'],
+                    required: true
+                },
+                {
+                    association: 'customer',
+                    attributes: ['id', 'name'],
+                    required: true
+                },
+                {
+                    association: 'serviceman',
+                    attributes: ['id', 'name'],  
+                }
+        ]
         })
-
-        if(orderStatus !== undefined && orderStatus !== null) {
-
-            for (let i = 0; i < result.length - 1; i++) {
-                const singleOrder = result[i].toJSON();
-
-                const customerInfo = await User.findByPk(result[i].customer_id, {
-                    attributes: ['name'],
-                });
-
-                const servicemanInfo = await User.findByPk(result[i].serviceman_id, {
-                    attributes: ['name'],
-                });
-
-                singleOrder.customer = customerInfo;
-                singleOrder.serviceman = servicemanInfo;
-
-                result[i] = singleOrder;
-            }
-        }
         
         return returnJson({
             res: res,
@@ -62,7 +58,6 @@ const getOrders = async (req, res, next) => {
             data: result
         })
     } catch(e) {
-        console.log(e)
         return next(new errors.InternalServerError('Internal Server Error. Retry'))
     }
 }
@@ -125,7 +120,6 @@ const getSingleUserOrders = async (req, res, next) => {
             {
                 association: 'serviceman',
                 attributes: [['name', 'serviceman_name']],
-                required: true,
             }],
             order: [['created_at', 'ASC']],
             limit: paginationData.limit,

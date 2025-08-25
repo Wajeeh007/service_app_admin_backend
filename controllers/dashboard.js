@@ -4,6 +4,7 @@ const returnJson = require('../custom_functions/return_json.js')
 const errors = require('../errors/index.js')
 const {ZoneWiseTimePeriodSelection, AdminEarningTimePeriodSelection} = require('../utils/statuses.js')
 
+/// API to get users related stats like total customer, total serviceman and total earnings etc
 const getUserStats = async (req, res, next) => {
 
     try {
@@ -50,6 +51,7 @@ const getUserStats = async (req, res, next) => {
 
 }
 
+/// API to get the zone wise stats like percentage of orders from a zone based on given time period
 const getZoneWiseTimePeriodStats = async (req, res, next) => {
 
     const timePeriod = req.query.time_period
@@ -136,6 +138,7 @@ const getZoneWiseTimePeriodStats = async (req, res, next) => {
 
 }
 
+/// API to get admin's earnings based on time period and zone. This data is used for plotting data on graph
 const getAdminEarningStats = async (req, res, next) => {
     const timePeriod = req.query.time_period
     const zoneId = req.query.zone_id
@@ -156,14 +159,21 @@ const getAdminEarningStats = async (req, res, next) => {
         let max
         let min
         let avg
-        let dailyGraphPoints
-        let monthlyGraphPoints
-        let yearlyGraphPoints
         let result = []
 
         if(timePeriod === 'Daily') {
             upperLimit = new Date(now.getFullYear(), now.getMonth() + 1, 0)
             lowerLimit = new Date(now.getFullYear(), now.getMonth(), 1)
+        }
+
+        if(timePeriod === 'Monthly') {
+            upperLimit = new Date(now.getFullYear(), 12, 31)
+            lowerLimit = new Date(now.getFullYear(), 1, 31)
+        }
+
+        if(timePeriod === 'Yearly') {
+            upperLimit = new Date(now.getFullYear(), 12, 31)
+            lowerLimit = new Date(now.getFullYear() - 11, 1, 1)
         }
 
         const orders = await Order.findAll({
@@ -176,25 +186,14 @@ const getAdminEarningStats = async (req, res, next) => {
         })
         
         if(orders.length > 0) {
-            result = []
-
-            for(let i = 0; i < orders.length; i++) {
-                if( i === 0) {
-                    result.push({
-                        x: orders[i].created_at.getDate(),
-                        y: Number(orders[i].commission_amount)
-                    })
-                } else {
-                    if(orders[i].created_at.getDate() === orders[i-1].created_at.getDate()) {
-                        result[result.length - 1].y += Number(orders[i].commission_amount)
-                    } else {
-                        result.push({
-                            x: orders[i].created_at.getDate(),
-                            y: Number(orders[i].commission_amount)
-                        })
-                    }
-                }
-            }
+        
+            if(timePeriod === 'Daily') {
+                result = constructDataForDailyGraph(orders)
+            } else if(timePeriod === 'Monthly') {
+                result = constructDataForMonthlyGraph(orders)
+            } else {
+                result = constructDataForYearlyGraph(orders)
+            }    
 
             max = Math.max(...result.map(item => item.y));
             min = Math.min(...result.map(item => item.y));
@@ -211,14 +210,85 @@ const getAdminEarningStats = async (req, res, next) => {
                     min: orders.length > 0 ? min : 0,
                     max: orders.length > 0 ? max : 0,
                     avg: orders.length > 0 ? avg : 0,
-                    daily_graph_points: orders.length > 0 ? result : null
+                    daily_graph_points: timePeriod === 'Daily' ? orders.length > 0 ? result : null : null,
+                    monthly_graph_points: timePeriod === 'Monthly' ? orders.length > 0 ? result : null : null,
+                    yearly_graph_points: timePeriod === 'Yearly' ? orders.length > 0 ? result : null : null
                 }
             })
 
     } catch(e) {
-        console.log(e)
         return next(new errors.InternalServerError())
     }
+}
+
+const constructDataForDailyGraph = (orders) => {
+
+    let result = []
+
+    for(let i = 0; i < orders.length; i++) {
+        if( i === 0) {
+            result.push({
+                x: orders[i].created_at.getDate(),
+                y: Number(orders[i].commission_amount)
+            })
+        } else {
+            if(orders[i].created_at.getDate() === orders[i-1].created_at.getDate()) {
+                result[result.length - 1].y += Number(orders[i].commission_amount)
+            } else {
+                result.push({
+                    x: orders[i].created_at.getDate(),
+                    y: Number(orders[i].commission_amount)
+                })
+            }
+        }
+    }
+    return result
+}
+
+const constructDataForMonthlyGraph = (orders) => {
+    let result = []
+
+    for(let i = 0; i < orders.length; i++) {
+        if( i === 0) {
+            result.push({
+                x: orders[i].created_at.getMonth(),
+                y: Number(orders[i].commission_amount)
+            })
+        } else {
+            if(orders[i].created_at.getMonth() === orders[i-1].created_at.getMonth()) {
+                result[result.length - 1].y += Number(orders[i].commission_amount)
+            } else {
+                result.push({
+                    x: orders[i].created_at.getMonth(),
+                    y: Number(orders[i].commission_amount)
+                })
+            }
+        }
+    }
+    return result
+}
+
+const constructDataForYearlyGraph = (orders) => {
+    let result = []
+
+    for(let i = 0; i < orders.length; i++) {
+        if( i === 0) {
+            result.push({
+                x: orders[i].created_at.getFullYear(),
+                y: Number(orders[i].commission_amount)
+            })
+        } else {
+            if(orders[i].created_at.getFullYear() === orders[i-1].created_at.getFullYear()) {
+                result[result.length - 1].y += Number(orders[i].commission_amount)
+            } else {
+                result.push({
+                    x: orders[i].created_at.getFullYear(),
+                    y: Number(orders[i].commission_amount)
+                })
+            }
+        }
+    }
+    return result
 }
 
 module.exports = {
