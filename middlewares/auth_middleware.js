@@ -20,11 +20,12 @@ const authMiddleware = (req, res, next) => {
         next()
     } catch (error) {
         if (error instanceof jwt.TokenExpiredError) {
-            throw new errors.BadRequestError('Invalid Token')
+            /// Don't change this message. This message is used to route the user back to login screen.
+            throw new errors.UnauthenticatedError('Expired Token')
         } else if (error instanceof jwt.JsonWebTokenError) {
-            throw new errors.BadRequestError('Invalid Token') 
+            throw new errors.UnauthenticatedError('Invalid Token') 
         } else {
-            throw new errors.CustomError('Token verification failed. Retry')
+            throw new errors.UnauthenticatedError('Token verification failed. Retry')
         }
     }
 }

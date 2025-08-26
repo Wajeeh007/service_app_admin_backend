@@ -15,9 +15,9 @@ module.exports = (sequelize, DataTypes) => {
           key: 'id'
         }
       },
-      permissions: {
-        type: DataTypes.JSON
-      },
+      // permissions: {
+      //   type: DataTypes.JSON
+      // },
       last_login: {
         type: DataTypes.DATE,
         defaultValue: sequelize.literal('CURRENT_TIMESTAMP')
@@ -32,6 +32,11 @@ module.exports = (sequelize, DataTypes) => {
       AdminProfile.belongsTo(models.User, {
         foreignKey: 'user_id',
         as: 'user'
+      });
+
+      AdminProfile.belongsTo(models.Role, {
+        foreignKey: 'role_id',
+        as: 'roles',
       });
     };
   return AdminProfile;

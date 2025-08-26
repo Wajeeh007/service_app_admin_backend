@@ -13,16 +13,19 @@ const withdrawRequestRouter = require('./withdraw_request.js')
 const orderRouter = require('./order.js')
 const reviewRouter = require('./review.js')
 const dashboardRouter = require('./dashboard.js')
+const authRouter = require('./auth.js')
 
-router.use('/zones', zoneRouter)
-router.use('/services', serviceRouter)
-router.use('/sub_services', subServiceRouter),
-router.use('/service_items', serviceItemRouter),
-router.use('/withdraw/methods', withdrawMethodRouter),
-router.use('/customers', customerRouter),
-router.use('/servicemen', servicemanRouter)
-router.use('/withdraw/requests', withdrawRequestRouter)
-router.use('/orders', orderRouter)
-router.use('/reviews', reviewRouter)
-router.use('/dashboard', dashboardRouter)
+router.use('/zones', authMiddleware, zoneRouter)
+router.use('/services', authMiddleware, serviceRouter)
+router.use('/sub_services', authMiddleware, subServiceRouter),
+router.use('/service_items', authMiddleware, serviceItemRouter),
+router.use('/withdraw/methods', authMiddleware, withdrawMethodRouter),
+router.use('/customers', authMiddleware, customerRouter),
+router.use('/servicemen', authMiddleware, servicemanRouter)
+router.use('/withdraw/requests', authMiddleware, withdrawRequestRouter)
+router.use('/orders', authMiddleware, orderRouter)
+router.use('/reviews', authMiddleware, reviewRouter)
+router.use('/dashboard', authMiddleware, dashboardRouter)
+router.use('/auth', authRouter)
+
 module.exports = router

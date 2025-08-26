@@ -28,6 +28,11 @@ module.exports = (sequelize, DataTypes) => {
         otherKey: 'user_id',
         as: 'users'
       });
+
+      Role.hasMany(models.AdminProfile, {
+        foreignKey: 'role_id',
+        as: 'admin_profile'
+       });
     };
   return Role;
 }
